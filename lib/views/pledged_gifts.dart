@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import '../controllers/pledged_gift_controllers.dart';
+import '../controllers/pledged_gift_controller.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -13,9 +13,9 @@ void main() {
 class PledgedGiftsPage extends StatelessWidget {
   // Example list of pledged gifts
   final List<PledgedGift> pledgedGifts = [
-    PledgedGift(giftName: 'Gift Card', friendName: 'John Doe', dueDate: DateTime(2024, 12, 25)),
-    PledgedGift(giftName: 'Watch', friendName: 'Jane Smith', dueDate: DateTime(2024, 11, 15)),
-    PledgedGift(giftName: 'Jewelry', friendName: 'Mike Johnson', dueDate: DateTime(2024, 10, 30)),
+    PledgedGift(giftName: 'SunGlasses', friendName: 'Malak', dueDate: DateTime(2024, 12, 25)),
+    PledgedGift(giftName: 'Watch', friendName: 'Omar', dueDate: DateTime(2024, 11, 15)),
+    PledgedGift(giftName: 'Jewelry', friendName: 'Mariam', dueDate: DateTime(2024, 10, 30)),
   ];
 
   @override

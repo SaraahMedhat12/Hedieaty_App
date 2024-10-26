@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'event_list.dart';
 import 'pledged_gifts.dart';
 import 'profile.dart';
+import 'gift_list.dart';
+import 'gift_details.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -22,8 +24,11 @@ class _HomePageState extends State<HomePage> {
   List<Widget> _pages = [
     HomePageContent(), // Home page content
     EventListPage(),   // Event page content
-    ProfilePage(),     // Profile page content
     PledgedGiftsPage(), // Pledged Gifts page content
+    GiftListPage(eventName: 'Birthday Party'), //gift list content
+    // GiftDetailsPage(), //gift details content
+    ProfilePage(),     // Profile page content
+
   ];
 
   void _onItemTapped(int index) {
@@ -77,12 +82,20 @@ class _HomePageState extends State<HomePage> {
             label: 'Events',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
+            icon: Icon(Icons.list),
+            label: 'Pledged',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.card_giftcard),
             label: 'Gifts',
+          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.card_giftcard),
+          //   label: 'Gift Details',
+          // ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ],
         type: BottomNavigationBarType.fixed, // Ensures all icons are visible
