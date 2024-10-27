@@ -141,7 +141,7 @@ class _EventListPageState extends State<EventListPage> {
                 Navigator.of(context).pop();
               },
               style: TextButton.styleFrom(
-                foregroundColor: Colors.brown, // Brown text for cancel
+                foregroundColor: Colors.brown,
               ),
               child: Text('Cancel'),
             ),
@@ -194,7 +194,7 @@ class _EventListPageState extends State<EventListPage> {
                 Navigator.of(context).pop();
               },
               style: TextButton.styleFrom(
-                foregroundColor: Colors.brown, // Brown text for cancel
+                foregroundColor: Colors.brown,
               ),
               child: Text('Cancel'),
             ),

@@ -96,7 +96,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         padding: EdgeInsets.symmetric(vertical: 16.0),
                         textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero, // No rounded edges
+                          borderRadius: BorderRadius.zero,
                         ),
                       ),
                       child: Text('Update Personal Information'),
@@ -292,8 +292,8 @@ class _ProfilePageState extends State<ProfilePage> {
             TextButton(
               onPressed: () {
                 setState(() {
-                  _controller.updatePhoneNumber(phoneController.text); // Update phone number
-                  _controller.updateBirthday(DateTime.parse(birthdayController.text)); // Update birthday
+                  _controller.updatePhoneNumber(phoneController.text);
+                  _controller.updateBirthday(DateTime.parse(birthdayController.text));
                 });
                 Navigator.of(context).pop(); // Close dialog
               },

@@ -86,7 +86,7 @@ class _GiftListPageState extends State<GiftListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 16), // Space between AppBar and the first card
+                SizedBox(height: 16),
                 _buildGiftList(),
                 SizedBox(height: 20),
                 _buildActionButtons(),
@@ -110,7 +110,7 @@ class _GiftListPageState extends State<GiftListPage> {
         Gift gift = sortedGifts[index];
         return Card(
           shape: RoundedRectangleBorder(
-            side: BorderSide(color: Colors.brown, width: 2), // Brown border for consistency
+            side: BorderSide(color: Colors.brown, width: 2),
             borderRadius: BorderRadius.circular(8),
           ),
           color: gift.isPledged ? Colors.brown[200] : Colors.white,

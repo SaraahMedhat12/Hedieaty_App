@@ -31,7 +31,7 @@ class PledgedGiftsPage extends StatelessWidget {
           // Background Image
           Positioned.fill(
             child: Image.asset(
-              'assets/bg5.jpeg', // Replace with your actual image path
+              'assets/bg5.jpeg',
               fit: BoxFit.cover,
             ),
           ),
@@ -55,8 +55,8 @@ class PledgedGiftsPage extends StatelessWidget {
     return Card(
       margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: Colors.brown, width: 1), // Brown border
-        borderRadius: BorderRadius.circular(8), // Rounded corners
+        side: BorderSide(color: Colors.brown, width: 1),
+        borderRadius: BorderRadius.circular(8),
       ),
       elevation: 5, // Shadow effect
       child: ListTile(

@@ -3,7 +3,7 @@ import 'event_list.dart';
 import 'pledged_gifts.dart';
 import 'profile.dart';
 import 'gift_list.dart';
-import 'gift_details.dart';
+//import 'gift_details.dart';
 
 void main() {
   runApp(MaterialApp(

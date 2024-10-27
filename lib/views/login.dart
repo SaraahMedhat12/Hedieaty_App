@@ -40,7 +40,7 @@ class _LoginPageState extends State<LoginPage> {
               child: Container(
                 padding: EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9), // Slight transparency for readability
+                  color: Colors.white.withOpacity(0.9),
                   border: Border.all(color: Colors.brown, width: 2.0),
                   borderRadius: BorderRadius.circular(12.0),
                 ),
@@ -75,7 +75,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // Method to build input fields with labels on top-left
+  // Method to build input fields
   Widget _buildLabelAndTextField({
     required String labelText,
     required TextEditingController controller,

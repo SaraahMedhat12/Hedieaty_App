@@ -117,7 +117,7 @@ class _SignupPageState extends State<SignupPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        SizedBox(height: 8), // Space between label and text field
+        SizedBox(height: 8),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,

@@ -47,7 +47,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start, // Align text to the left
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'Gift Name',
@@ -139,9 +139,9 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                           ),
 
                           SizedBox(height: 20),
-                          Center( // Center the button
+                          Center(
                             child: SizedBox(
-                              width: double.infinity, // Stretch to full width
+                              width: double.infinity,
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.brown,
