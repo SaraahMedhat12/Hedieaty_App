@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../controllers/signup_controller.dart';
 import 'login.dart';
+import '../controllers/signup_controller.dart';
 
 class SignupPage extends StatefulWidget {
   @override
@@ -28,7 +28,7 @@ class _SignupPageState extends State<SignupPage> {
       ),
       body: Stack(
         children: [
-          // Background Image
+          // Background Image (commented out)
           // Positioned.fill(
           //   child: Image.asset(
           //     'assets/bg5.jpeg',
@@ -86,7 +86,7 @@ class _SignupPageState extends State<SignupPage> {
                       SizedBox(height: 32),
                       _buildSignupButton(),
                       SizedBox(height: 20),
-                      _buildLoginRedirectButton(), // Button to navigate to LoginPage
+                      _buildLoginLink(),
                     ],
                   ),
                 ),
@@ -133,7 +133,7 @@ class _SignupPageState extends State<SignupPage> {
               borderSide: BorderSide(color: Colors.brown, width: 2),
             ),
           ),
-          validator: (value) => validateField(value, labelText),
+          validator: (value) => _signupControllers.validateField(value, labelText),
         ),
       ],
     );
@@ -144,9 +144,34 @@ class _SignupPageState extends State<SignupPage> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {
+        onPressed: () async {
           if (_formKey.currentState!.validate()) {
             print('Form is valid!');
+
+            try {
+              // Use the controller's createUser method to insert user
+              bool success = await _signupControllers.createUser();
+              if (success) {
+                print('User created successfully');
+
+                // Fetch and print the list of users from the database
+                List<Map<String, dynamic>> users = await _signupControllers.fetchAllUsers();
+                print('Users in database: $users'); // Print users to the console
+
+                // Navigate to Login page after successful signup
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginPage()),
+                );
+              } else {
+                throw Exception('Failed to create user');
+              }
+            } catch (e) {
+              print('Error: $e');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to create user: $e')),
+              );
+            }
           }
         },
         style: ElevatedButton.styleFrom(
@@ -161,25 +186,35 @@ class _SignupPageState extends State<SignupPage> {
     );
   }
 
-  // Build button to navigate to LoginPage
-  Widget _buildLoginRedirectButton() {
-    return Center(
-      child: TextButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => LoginPage()), // Navigate to LoginPage
-          );
-        },
+  // Build link to navigate to Login Page
+  Widget _buildLoginLink() {
+    return TextButton(
+      onPressed: () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => LoginPage()),
+        );
+      },
+      child: Center(
         child: Text(
-          'Click here if you already have an account',
-          style: TextStyle(decoration: TextDecoration.underline, color: Colors.brown),
+          'Already have an account? Login',
+          style: TextStyle(
+            color: Colors.brown,
+            fontWeight: FontWeight.bold,
+            decoration: TextDecoration.underline,
+            decorationColor: Colors.brown,
+            decorationThickness: 2.0,
+            fontSize: 16.0,
+          ),
+          textAlign: TextAlign.center,
         ),
-      ),
+      )
+
     );
   }
 }
 
+// Main function to run the app (should be in the main.dart file, not here)
 void main() {
   runApp(MaterialApp(
     home: SignupPage(),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../controllers/signup_controller.dart'; // Reusing the controllers
+import '../views/main.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -30,7 +31,7 @@ class _LoginPageState extends State<LoginPage> {
           // Positioned.fill(
           //   child: Image.asset(
           //     'assets/bg5.jpeg',
-          //      fit: BoxFit.cover,
+          //     fit: BoxFit.cover,
           //   ),
           // ),
           // Login Form Container
@@ -108,7 +109,7 @@ class _LoginPageState extends State<LoginPage> {
               borderSide: BorderSide(color: Colors.brown, width: 2),
             ),
           ),
-          validator: (value) => validateField(value, labelText),
+          validator: (value) => _signupControllers.validateField(value, labelText),
         ),
       ],
     );
@@ -122,6 +123,12 @@ class _LoginPageState extends State<LoginPage> {
         onPressed: () {
           if (_formKey.currentState!.validate()) {
             print('Login successful!');
+
+            // After successful login, navigate to the home page (or dashboard)
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => HomePage()), // Change HomePage() to the desired page
+            );
           }
         },
         style: ElevatedButton.styleFrom(

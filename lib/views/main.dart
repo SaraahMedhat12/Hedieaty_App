@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
+import 'database.dart';
 import 'event_list.dart';
 import 'pledged_gifts.dart';
 import 'profile.dart';
 import 'gift_list.dart';
+import 'package:sqflite/sqflite.dart'; // For SQLite database operations
+import 'package:path/path.dart'; // For constructing file paths
+
 //import 'gift_details.dart';
 
-void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: HomePage(),
-  ));
-}
-
+// void main() {
+//   runApp(MaterialApp(
+//     debugShowCheckedModeBanner: false,
+//     home: HomePage(),
+//   ));
+// }
+//
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
