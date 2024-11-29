@@ -16,15 +16,14 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    // Define database path
     String dbPath = await getDatabasesPath();
     String path = join(dbPath, 'hedieaty.db');
 
-    // Open the database and create tables if necessary
     return await openDatabase(
       path,
       version: 1,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -48,7 +47,7 @@ class DatabaseHelper {
         location TEXT,
         description TEXT,
         user_id INTEGER NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES Users (id)
+        FOREIGN KEY (user_id) REFERENCES Users (id) ON DELETE CASCADE ON UPDATE CASCADE
       )
     ''');
 
@@ -62,7 +61,7 @@ class DatabaseHelper {
         price REAL,
         status TEXT,
         event_id INTEGER NOT NULL,
-        FOREIGN KEY (event_id) REFERENCES Events (id)
+        FOREIGN KEY (event_id) REFERENCES Events (id) ON DELETE CASCADE ON UPDATE CASCADE
       )
     ''');
 
@@ -72,76 +71,147 @@ class DatabaseHelper {
         user_id INTEGER NOT NULL,
         friend_id INTEGER NOT NULL,
         PRIMARY KEY (user_id, friend_id),
-        FOREIGN KEY (user_id) REFERENCES Users (id),
-        FOREIGN KEY (friend_id) REFERENCES Users (id)
+        FOREIGN KEY (user_id) REFERENCES Users (id) ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY (friend_id) REFERENCES Users (id) ON DELETE CASCADE ON UPDATE CASCADE
       )
     ''');
+
+    // Add index for the `email` column in `Users` for performance
+    await db.execute('CREATE INDEX idx_users_email ON Users (email)');
   }
 
-  // CRUD operations for `Users`
+  void _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Example migration: Adding a new column to Users
+      await db.execute('ALTER TABLE Users ADD COLUMN profile_picture TEXT');
+    }
+    // Add further migrations for newer versions as needed
+  }
+
+  // CRUD Operations for Users
   Future<int> insertUser(Map<String, dynamic> user) async {
     final db = await database;
     try {
+      // Check if the email already exists
+      final existingUser = await db.query(
+        'Users',
+        where: 'email = ?',
+        whereArgs: [user['email']],
+      );
+
+      if (existingUser.isNotEmpty) {
+        throw Exception('Email already exists.');
+      }
+
       return await db.insert('Users', user);
     } catch (e) {
       print('Database error: $e');
-      throw Exception('Email already exists.');
+      throw Exception('Failed to insert user: $e');
     }
   }
 
-
   Future<List<Map<String, dynamic>>> getAllUsers() async {
     final db = await database;
-    return await db.query('Users');
+    try {
+      return await db.query('Users');
+    } catch (e) {
+      print('Database error while fetching users: $e');
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> getUserByEmail(String email) async {
+    final db = await database;
+    try {
+      final result = await db.query(
+        'Users',
+        where: 'email = ?',
+        whereArgs: [email],
+      );
+      return result.isNotEmpty ? result.first : null;
+    } catch (e) {
+      print('Database error while fetching user by email: $e');
+      return null;
+    }
   }
 
   Future<int> updateUser(Map<String, dynamic> user) async {
     final db = await database;
-    return await db.update(
-      'Users',
-      user,
-      where: 'id = ?',
-      whereArgs: [user['id']],
-    );
+    try {
+      return await db.update(
+        'Users',
+        user,
+        where: 'id = ?',
+        whereArgs: [user['id']],
+      );
+    } catch (e) {
+      print('Database error while updating user: $e');
+      return 0;
+    }
   }
 
   Future<int> deleteUser(int id) async {
     final db = await database;
-    return await db.delete(
-      'Users',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    try {
+      return await db.delete(
+        'Users',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    } catch (e) {
+      print('Database error while deleting user: $e');
+      return 0;
+    }
   }
 
-  // CRUD operations for `Events`
+  // CRUD Operations for Events
   Future<int> insertEvent(Map<String, dynamic> event) async {
     final db = await database;
-    return await db.insert('Events', event);
+    try {
+      return await db.insert('Events', event);
+    } catch (e) {
+      print('Database error while inserting event: $e');
+      return 0;
+    }
   }
 
   Future<List<Map<String, dynamic>>> getAllEvents() async {
     final db = await database;
-    return await db.query('Events');
+    try {
+      return await db.query('Events');
+    } catch (e) {
+      print('Database error while fetching events: $e');
+      return [];
+    }
   }
 
   Future<int> updateEvent(Map<String, dynamic> event) async {
     final db = await database;
-    return await db.update(
-      'Events',
-      event,
-      where: 'id = ?',
-      whereArgs: [event['id']],
-    );
+    try {
+      return await db.update(
+        'Events',
+        event,
+        where: 'id = ?',
+        whereArgs: [event['id']],
+      );
+    } catch (e) {
+      print('Database error while updating event: $e');
+      return 0;
+    }
   }
 
   Future<int> deleteEvent(int id) async {
     final db = await database;
-    return await db.delete(
-      'Events',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    try {
+      return await db.delete(
+        'Events',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    } catch (e) {
+      print('Database error while deleting event: $e');
+      return 0;
+    }
   }
 
   // CRUD operations for `Gifts`

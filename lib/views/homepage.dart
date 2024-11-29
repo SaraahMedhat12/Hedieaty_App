@@ -25,13 +25,13 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
   // List of widgets for each page
-  List<Widget> _pages = [
+  final List<Widget> _pages = [
     HomePageContent(), // Home page content
     EventListPage(),   // Event page content
     PledgedGiftsPage(), // Pledged Gifts page content
     GiftListPage(eventName: 'Birthday Party'), //gift list content
     // GiftDetailsPage(), //gift details content
-    ProfilePage(),     // Profile page content
+     ProfilePage(userId:3), // Pass the required userId // Profile page content
 
   ];
 

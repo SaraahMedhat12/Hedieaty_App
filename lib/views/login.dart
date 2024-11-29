@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../controllers/signup_controller.dart'; // Reusing the controllers
-import '../views/main.dart';
+import '../views/homepage.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -13,7 +13,8 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
-    _signupControllers.dispose(); // Dispose controllers when the widget is destroyed
+    _signupControllers
+        .dispose(); // Dispose controllers when the widget is destroyed
     super.dispose();
   }
 
@@ -109,7 +110,8 @@ class _LoginPageState extends State<LoginPage> {
               borderSide: BorderSide(color: Colors.brown, width: 2),
             ),
           ),
-          validator: (value) => _signupControllers.validateField(value, labelText),
+          validator: (value) =>
+              _signupControllers.validateField(value, labelText),
         ),
       ],
     );
@@ -120,15 +122,29 @@ class _LoginPageState extends State<LoginPage> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {
+        onPressed: () async {
           if (_formKey.currentState!.validate()) {
-            print('Login successful!');
+            final email = _signupControllers.emailController.text.trim();
 
-            // After successful login, navigate to the home page (or dashboard)
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => HomePage()), // Change HomePage() to the desired page
-            );
+            // Check if email exists in the database
+            bool isRegistered = await _signupControllers.isEmailRegistered(
+                email);
+
+            if (isRegistered) {
+              print('Login successful!');
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomePage()),
+              );
+            } else {
+              // Show error if email not found
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Login failed: Email not found.'),
+                  backgroundColor: Colors.brown,
+                ),
+              );
+            }
           }
         },
         style: ElevatedButton.styleFrom(

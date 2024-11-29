@@ -9,12 +9,18 @@
 //
 // //import 'gift_details.dart';
 import 'package:flutter/material.dart';
-import '../views/main.dart';
+import '../views/homepage.dart';
+import '../views/signup.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
-    home: HomePage(),
+    home:  //HomePage()
+     SignupPage(),
   ));
 }
 

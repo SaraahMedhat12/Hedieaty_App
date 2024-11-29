@@ -2,19 +2,27 @@ import 'package:flutter/material.dart';
 import '../controllers/profile_controller.dart';
 import 'pledged_gifts.dart';
 
-void main() {
-  runApp(MaterialApp(
-    home: ProfilePage(),
-  ));
-}
-
 class ProfilePage extends StatefulWidget {
+  final int userId; // Pass the logged-in user's ID
+  ProfilePage({required this.userId});
+
   @override
   _ProfilePageState createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final ProfileController _controller = ProfileController(); // Instantiate the controller
+  final ProfileController _controller = ProfileController();
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeProfile();
+  }
+
+  Future<void> _initializeProfile() async {
+    await _controller.loadUserProfile(widget.userId);
+    setState(() {}); // Trigger UI update after loading data
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,16 +88,13 @@ class _ProfilePageState extends State<ProfilePage> {
                   // Profile details
                   _buildProfileDetail('Phone Number', _controller.phoneNumber, Icons.phone),
                   _buildProfileDetail('Birthday', '${_controller.birthday.toLocal()}'.split(' ')[0], Icons.cake),
-
                   SizedBox(height: 20),
 
                   // Button to update personal information
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
-                        _showUpdateDialog(); // Show dialog to update personal information
-                      },
+                      onPressed: () => _showUpdateDialog(),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.brown,
                         foregroundColor: Colors.white,
@@ -121,7 +126,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     activeColor: Colors.brown,
                     onChanged: (bool value) {
                       setState(() {
-                        _controller.toggleNotifications(value); // Update notification setting
+                        // _controller.toggleNotifications(value); // Update notification setting
                       });
                     },
                   ),
@@ -139,8 +144,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       color: Colors.brown[900],
                     ),
                   ),
-
-
 
                   // Events List
                   _buildEventsList(),
@@ -170,7 +173,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: Text('My Pledged Gifts', style: TextStyle(fontSize: 16)),
                     ),
                   ),
-
                   SizedBox(height: 20),
                   Divider(thickness: 10, color: Colors.brown),
                   SizedBox(height: 50),
@@ -214,21 +216,8 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.brown[700],
-                  ),
-                ),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.brown[900],
-                  ),
-                ),
+                Text(label, style: TextStyle(fontSize: 14, color: Colors.brown[700])),
+                Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.brown[900])),
               ],
             ),
           ),
@@ -237,7 +226,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Helper widget to build events list
+// Helper widget to build events list
   Widget _buildEventsList() {
     return ListView.builder(
       shrinkWrap: true,
@@ -257,12 +246,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // Method to show update dialog
   void _showUpdateDialog() {
-    final TextEditingController phoneController = TextEditingController(text: _controller.phoneNumber);
-    final TextEditingController birthdayController = TextEditingController(text: '${_controller.birthday.toLocal()}'.split(' ')[0]);
+    final phoneController = TextEditingController(text: _controller.phoneNumber);
+    final birthdayController = TextEditingController(text: '${_controller.birthday.toLocal()}'.split(' ')[0]);
 
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (context) {
         return AlertDialog(
           title: Text('Update Personal Information'),
           backgroundColor: Colors.brown[50],
@@ -272,29 +261,25 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 TextField(
                   controller: phoneController,
-                  decoration: InputDecoration(
-                    labelText: 'Phone Number',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: InputDecoration(labelText: 'Phone Number', border: OutlineInputBorder()),
                 ),
                 SizedBox(height: 10),
                 TextField(
                   controller: birthdayController,
-                  decoration: InputDecoration(
-                    labelText: 'Birthday (YYYY-MM-DD)',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: InputDecoration(labelText: 'Birthday (YYYY-MM-DD)', border: OutlineInputBorder()),
                 ),
               ],
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                setState(() {
-                  _controller.updatePhoneNumber(phoneController.text);
-                  _controller.updateBirthday(DateTime.parse(birthdayController.text));
-                });
+              onPressed: () async {
+                await _controller.updateProfile(
+                  widget.userId,
+                  newPhoneNumber: phoneController.text,
+                  newBirthday: DateTime.parse(birthdayController.text),
+                );
+                setState(() {}); // Refresh the UI
                 Navigator.of(context).pop(); // Close dialog
               },
               child: Text('Save'),
@@ -311,5 +296,3 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 }
-
-

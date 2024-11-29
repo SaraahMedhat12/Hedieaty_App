@@ -37,6 +37,17 @@ class SignupControllers {
     }
   }
 
+  // Check if email exists in the database
+  Future<bool> isEmailRegistered(String email) async {
+    try {
+      final user = await _dbHelper.getUserByEmail(email);
+      return user != null; // Return true if user exists
+    } catch (e) {
+      print('Error checking email: $e');
+      return false;
+    }
+  }
+
   // Validate user input
   String? validateField(String? value, String fieldName) {
     if (value == null || value.trim().isEmpty) {

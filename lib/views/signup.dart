@@ -164,12 +164,15 @@ class _SignupPageState extends State<SignupPage> {
                   MaterialPageRoute(builder: (context) => LoginPage()),
                 );
               } else {
-                throw Exception('Failed to create user');
+                throw Exception('Email already exists');
               }
             } catch (e) {
               print('Error: $e');
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to create user: $e')),
+                SnackBar(
+                  content: Text('$e'),
+                  backgroundColor: Colors.brown,
+                ),
               );
             }
           }
@@ -214,9 +217,9 @@ class _SignupPageState extends State<SignupPage> {
   }
 }
 
-// Main function to run the app (should be in the main.dart file, not here)
-void main() {
-  runApp(MaterialApp(
-    home: SignupPage(),
-  ));
-}
+// Main function to run the app (should be in the homepage.dart file, not here)
+// void main() {
+//   runApp(MaterialApp(
+//     home: SignupPage(),
+//   ));
+// }
