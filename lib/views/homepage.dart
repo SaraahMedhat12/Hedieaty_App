@@ -1,21 +1,13 @@
 import 'package:flutter/material.dart';
-import 'database.dart';
+import '../database.dart';
 import 'event_list.dart';
 import 'pledged_gifts.dart';
 import 'profile.dart';
 import 'gift_list.dart';
 import 'package:sqflite/sqflite.dart'; // For SQLite database operations
 import 'package:path/path.dart'; // For constructing file paths
+import 'package:shared_preferences/shared_preferences.dart'; // For shared preferences
 
-//import 'gift_details.dart';
-
-// void main() {
-//   runApp(MaterialApp(
-//     debugShowCheckedModeBanner: false,
-//     home: HomePage(),
-//   ));
-// }
-//
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
@@ -30,16 +22,67 @@ class _HomePageState extends State<HomePage> {
     EventListPage(),   // Event page content
     PledgedGiftsPage(), // Pledged Gifts page content
     GiftListPage(eventName: 'Birthday Party'), //gift list content
-    // GiftDetailsPage(), //gift details content
-     ProfilePage(userId:3), // Pass the required userId // Profile page content
-
+    ProfilePage(userId: 0), // Set default userId to 0 here
   ];
 
-  void _onItemTapped(int index) {
+  Future<int?> _getUserIdFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userId');
+    print('Retrieved userId: $userId'); // Debugging statement
+    return userId;
+  }
+
+
+  // Navigate to ProfilePage and pass the userId
+  void _navigateToProfilePage(BuildContext context) async {
+    final userId = await _getUserIdFromPrefs(); // Retrieve the userId from SharedPreferences
+
+    if (userId != null) {
+      // Navigate to ProfilePage and pass the userId
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProfilePage(userId: userId), // Pass the userId to ProfilePage
+        ),
+      );
+    } else {
+      // Handle case when userId is null (perhaps show an error message or redirect to login)
+      print('User is not logged in!');
+    }
+  }
+
+  // Update the _pages list to include the ProfilePage with userId dynamically passed
+  void _updatePages() async {
+    final userId = await _getUserIdFromPrefs();
+    setState(() {
+      _pages[4] = ProfilePage(userId: userId ?? 0); // Dynamically pass userId to ProfilePage, defaulting to 0
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _updatePages(); // Ensure ProfilePage is initialized with the userId
+  }
+
+  void _onItemTapped(int index) async {
     setState(() {
       _selectedIndex = index;
     });
+
+    if (index == 4) { // Assuming 4 is the index for the ProfilePage
+      final userId = await _getUserIdFromPrefs(); // Retrieve the userId
+      if (userId != null) {
+        // Dynamically update ProfilePage with the userId
+        setState(() {
+          _pages[4] = ProfilePage(userId: userId);
+        });
+      } else {
+        print('User is not logged in!');
+      }
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -93,10 +136,6 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.card_giftcard),
             label: 'Gifts',
           ),
-          // BottomNavigationBarItem(
-          //   icon: Icon(Icons.card_giftcard),
-          //   label: 'Gift Details',
-          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profile',
@@ -107,6 +146,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
+
+
 
 // Home page content without the bottom nav bar
 class HomePageContent extends StatelessWidget {

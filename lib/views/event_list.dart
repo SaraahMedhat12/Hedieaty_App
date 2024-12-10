@@ -7,7 +7,18 @@ class EventListPage extends StatefulWidget {
 }
 
 class _EventListPageState extends State<EventListPage> {
-  EventController eventController = EventController();
+  final EventController eventController = EventController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEvents();
+  }
+
+  Future<void> _loadEvents() async {
+    await eventController.loadEventsForLoggedInUser();
+    setState(() {}); // Refresh UI after loading events
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +31,7 @@ class _EventListPageState extends State<EventListPage> {
           IconButton(
             icon: Icon(Icons.sort),
             onPressed: () {
-              _showSortOptions(); // Show sorting options
+              _showSortOptions();
             },
           ),
         ],
@@ -85,13 +96,13 @@ class _EventListPageState extends State<EventListPage> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: Icon(Icons.edit,color:Colors.brown,),
+                                icon: Icon(Icons.edit, color: Colors.brown),
                                 onPressed: () {
                                   _showEditEventDialog(index);
                                 },
                               ),
                               IconButton(
-                                icon: Icon(Icons.delete,color:Colors.brown,),
+                                icon: Icon(Icons.delete, color: Colors.brown),
                                 onPressed: () {
                                   setState(() {
                                     eventController.deleteEvent(index);
@@ -113,10 +124,11 @@ class _EventListPageState extends State<EventListPage> {
     );
   }
 
-  // Show add event dialog
   void _showAddEventDialog() {
     TextEditingController nameController = TextEditingController();
-    TextEditingController categoryController = TextEditingController();
+    String? selectedCategory;
+    DateTime selectedDate = DateTime.now();
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -129,8 +141,19 @@ class _EventListPageState extends State<EventListPage> {
                 controller: nameController,
                 decoration: InputDecoration(labelText: 'Event Name'),
               ),
-              TextField(
-                controller: categoryController,
+              DropdownButtonFormField<String>(
+                value: selectedCategory,
+                onChanged: (value) {
+                  setState(() {
+                    selectedCategory = value;
+                  });
+                },
+                items: ['Birthday', 'Anniversary', 'Graduation']
+                    .map((category) => DropdownMenuItem(
+                  value: category,
+                  child: Text(category),
+                ))
+                    .toList(),
                 decoration: InputDecoration(labelText: 'Event Category'),
               ),
             ],
@@ -146,11 +169,18 @@ class _EventListPageState extends State<EventListPage> {
               child: Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  eventController.addEvent(nameController.text, categoryController.text);
-                });
-                Navigator.of(context).pop();
+              onPressed: () async {
+                if (nameController.text.isNotEmpty && selectedCategory != null) {
+                  await eventController.addEventForLoggedInUser(
+                    nameController.text,
+                    selectedCategory!,
+                    selectedDate,
+                  );
+                  _loadEvents();
+                  Navigator.of(context).pop();
+                } else {
+                  print('Name or category is empty!');
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.brown,
@@ -164,12 +194,12 @@ class _EventListPageState extends State<EventListPage> {
     );
   }
 
-  // Show edit event dialog
   void _showEditEventDialog(int index) {
-    TextEditingController nameController = TextEditingController(
-        text: eventController.events[index]['name']);
-    TextEditingController categoryController = TextEditingController(
-        text: eventController.events[index]['category']);
+    TextEditingController nameController =
+    TextEditingController(text: eventController.events[index]['name']);
+    TextEditingController categoryController =
+    TextEditingController(text: eventController.events[index]['category']);
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -199,12 +229,17 @@ class _EventListPageState extends State<EventListPage> {
               child: Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  eventController.editEvent(
-                      index, nameController.text, categoryController.text);
-                });
-                Navigator.of(context).pop();
+              onPressed: () async {
+                if (nameController.text.isNotEmpty &&
+                    categoryController.text.isNotEmpty) {
+                  await eventController.editEvent(
+                    index,
+                    nameController.text,
+                    categoryController.text,
+                  );
+                  _loadEvents();
+                  Navigator.of(context).pop();
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.brown,
@@ -218,7 +253,6 @@ class _EventListPageState extends State<EventListPage> {
     );
   }
 
-  // Show sort options
   void _showSortOptions() {
     showModalBottomSheet(
       context: context,
@@ -232,7 +266,7 @@ class _EventListPageState extends State<EventListPage> {
                 title: Text('Sort by Name'),
                 onTap: () {
                   setState(() {
-                    eventController.sortEvents('name');
+                    eventController.events.sort((a, b) => a['name'].compareTo(b['name']));
                   });
                   Navigator.pop(context);
                 },
@@ -241,7 +275,8 @@ class _EventListPageState extends State<EventListPage> {
                 title: Text('Sort by Category'),
                 onTap: () {
                   setState(() {
-                    eventController.sortEvents('category');
+                    eventController.events.sort(
+                            (a, b) => a['category'].compareTo(b['category']));
                   });
                   Navigator.pop(context);
                 },
@@ -250,7 +285,8 @@ class _EventListPageState extends State<EventListPage> {
                 title: Text('Sort by Status'),
                 onTap: () {
                   setState(() {
-                    eventController.sortEvents('status');
+                    eventController.events.sort(
+                            (a, b) => a['status'].compareTo(b['status']));
                   });
                   Navigator.pop(context);
                 },
@@ -261,11 +297,4 @@ class _EventListPageState extends State<EventListPage> {
       },
     );
   }
-}
-
-void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: EventListPage(),
-  ));
 }

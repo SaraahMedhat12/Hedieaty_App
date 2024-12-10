@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import '../views/database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../database.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 
 class SignupControllers {
   final nameController = TextEditingController();
@@ -25,11 +28,24 @@ class SignupControllers {
       Map<String, dynamic> user = {
         'name': nameController.text.trim(),
         'email': emailController.text.trim(),
+        'password': passwordController.text.trim(), // Ensure password is provided
         'preferences': 'Phone: ${phoneController.text.trim()}, Birthday: ${birthdayController.text.trim()}',
       };
 
       // Insert user data into the database
       await _dbHelper.insertUser(user);
+
+      // Get the user's ID from the database
+      final newUser = await _dbHelper.getUserByEmail(emailController.text.trim());
+      final userId = newUser?['id'];
+
+      if (userId != null) {
+        // Store the userId in SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('userId', userId);
+        print('User created successfully! User ID: $userId');
+      }
+
       return true;
     } catch (e) {
       print('Error creating user: $e');
@@ -81,6 +97,41 @@ class SignupControllers {
     } catch (e) {
       print('Error fetching users: $e');
       return [];
+    }
+  }
+
+  // Get user by email
+  Future<Map<String, dynamic>?> getUserByEmail(String email) async {
+    try {
+      final db = await _dbHelper.database; // Use _dbHelper.database to get the database instance
+      final result = await db.query(
+        'Users', // Make sure the table name is 'Users'
+        where: 'email = ?',
+        whereArgs: [email],
+      );
+      return result.isNotEmpty ? result.first : null;
+    } catch (e) {
+      print('Database error while fetching user by email: $e');
+      return null;
+    }
+  }
+
+  // Authenticate user by email and password
+  Future<bool> authenticateUser(String email, String password) async {
+    try {
+      final user = await _dbHelper.getUserByEmail(email);
+
+      // Check if the user exists and the password matches
+      if (user != null && user['password'] == password) {
+        print('Authentication successful for user: $email');
+        return true;  // Return true if credentials match
+      } else {
+        print('Authentication failed: Incorrect email or password');
+        return false;  // Return false if credentials are incorrect
+      }
+    } catch (e) {
+      print('Error during authentication: $e');
+      return false;  // Return false if there is an error
     }
   }
 }

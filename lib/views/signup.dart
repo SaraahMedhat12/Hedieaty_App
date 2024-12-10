@@ -192,26 +192,26 @@ class _SignupPageState extends State<SignupPage> {
   // Build link to navigate to Login Page
   Widget _buildLoginLink() {
     return TextButton(
-      onPressed: () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => LoginPage()),
-        );
-      },
-      child: Center(
-        child: Text(
-          'Already have an account? Login',
-          style: TextStyle(
-            color: Colors.brown,
-            fontWeight: FontWeight.bold,
-            decoration: TextDecoration.underline,
-            decorationColor: Colors.brown,
-            decorationThickness: 2.0,
-            fontSize: 16.0,
+        onPressed: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => LoginPage()),
+          );
+        },
+        child: Center(
+          child: Text(
+            'Already have an account? Login',
+            style: TextStyle(
+              color: Colors.brown,
+              fontWeight: FontWeight.bold,
+              decoration: TextDecoration.underline,
+              decorationColor: Colors.brown,
+              decorationThickness: 2.0,
+              fontSize: 16.0,
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
-        ),
-      )
+        )
 
     );
   }

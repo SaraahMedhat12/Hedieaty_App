@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../controllers/signup_controller.dart'; // Reusing the controllers
 import '../views/homepage.dart';
+import '../database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -13,8 +15,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
-    _signupControllers
-        .dispose(); // Dispose controllers when the widget is destroyed
+    _signupControllers.dispose(); // Dispose controllers when the widget is destroyed
     super.dispose();
   }
 
@@ -29,13 +30,6 @@ class _LoginPageState extends State<LoginPage> {
       body: Stack(
         children: [
           // Background Image
-          // Positioned.fill(
-          //   child: Image.asset(
-          //     'assets/bg5.jpeg',
-          //     fit: BoxFit.cover,
-          //   ),
-          // ),
-          // Login Form Container
           SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -125,22 +119,44 @@ class _LoginPageState extends State<LoginPage> {
         onPressed: () async {
           if (_formKey.currentState!.validate()) {
             final email = _signupControllers.emailController.text.trim();
+            final password = _signupControllers.passwordController.text.trim();
 
-            // Check if email exists in the database
-            bool isRegistered = await _signupControllers.isEmailRegistered(
-                email);
+            // Authenticate user
+            bool isAuthenticated = await _signupControllers.authenticateUser(email, password);
 
-            if (isRegistered) {
-              print('Login successful!');
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => HomePage()),
-              );
+            if (isAuthenticated) {
+              // Fetch the user by email to get user details
+              var user = await _signupControllers.getUserByEmail(email);
+
+              if (user != null) {
+                int userId = user['id']; // Get the userId from the returned user data
+
+                // Store userId in SharedPreferences
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                await prefs.setInt('userId', userId);
+
+                print('Login successful! User ID: $userId');
+
+                // Navigate to the home page or the next screen
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                );
+              } else {
+                print('User not found');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('User not found.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             } else {
-              // Show error if email not found
+              // Handle authentication failure
+              print('Authentication failed');
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Login failed: Email not found.'),
+                  content: Text('Login failed: Invalid email or password.'),
                   backgroundColor: Colors.brown,
                 ),
               );

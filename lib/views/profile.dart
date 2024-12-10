@@ -19,6 +19,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _initializeProfile();
   }
 
+  // Initialize profile data
   Future<void> _initializeProfile() async {
     await _controller.loadUserProfile(widget.userId);
     setState(() {}); // Trigger UI update after loading data
@@ -73,18 +74,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
 
-                  // Role (Engineer)
-                  Center(
-                    child: Text(
-                      'Engineer',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.brown[700],
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 20),
-
                   // Profile details
                   _buildProfileDetail('Phone Number', _controller.phoneNumber, Icons.phone),
                   _buildProfileDetail('Birthday', '${_controller.birthday.toLocal()}'.split(' ')[0], Icons.cake),
@@ -107,30 +96,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: Text('Update Personal Information'),
                     ),
                   ),
-                  SizedBox(height: 20),
-                  Divider(thickness: 10, color: Colors.brown),
-                  SizedBox(height: 50),
-
-                  // Notification Settings
-                  Text(
-                    'Notification Settings',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: Colors.brown[900],
-                    ),
-                  ),
-                  SwitchListTile(
-                    title: Text('Receive Notifications'),
-                    value: _controller.notificationsEnabled,
-                    activeColor: Colors.brown,
-                    onChanged: (bool value) {
-                      setState(() {
-                        // _controller.toggleNotifications(value); // Update notification setting
-                      });
-                    },
-                  ),
-
                   SizedBox(height: 20),
                   Divider(thickness: 10, color: Colors.brown),
                   SizedBox(height: 50),
@@ -226,7 +191,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-// Helper widget to build events list
+  // Helper widget to build events list
   Widget _buildEventsList() {
     return ListView.builder(
       shrinkWrap: true,
