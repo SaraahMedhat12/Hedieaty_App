@@ -17,22 +17,22 @@ class _EventListPageState extends State<EventListPage> {
 
   Future<void> _loadEvents() async {
     await eventController.loadEventsForLoggedInUser();
-    setState(() {}); // Refresh UI after loading events
+    setState(() {}); // Update UI after fetching events
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Hedieaty - Event List'),
+        title: Text(
+          'Hedieaty - Event List',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.brown,
-        foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: Icon(Icons.sort),
-            onPressed: () {
-              _showSortOptions();
-            },
+            icon: Icon(Icons.sort, color: Colors.white),
+            onPressed: _showSortOptions,
           ),
         ],
       ),
@@ -58,55 +58,48 @@ class _EventListPageState extends State<EventListPage> {
                       backgroundColor: Colors.brown,
                       foregroundColor: Colors.white,
                       padding: EdgeInsets.symmetric(vertical: 16.0),
-                      textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
                 Expanded(
                   child: ListView.builder(
                     itemCount: eventController.events.length,
                     itemBuilder: (context, index) {
+                      final event = eventController.events[index];
                       return Card(
-                        elevation: 4,
                         margin: EdgeInsets.symmetric(vertical: 8.0),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.0),
-                          side: BorderSide(color: Colors.brown, width: 1),
+                          side: BorderSide(color: Colors.brown, width: 1.5),
+                          borderRadius: BorderRadius.circular(10),
                         ),
+                        elevation: 5,
                         child: ListTile(
                           title: Text(
-                            eventController.events[index]['name'],
+                            event['name'],
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                              color: Colors.brown[800],
                             ),
                           ),
                           subtitle: Text(
-                            'Category: ${eventController.events[index]['category']} | Status: ${eventController.events[index]['status']}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[700],
-                            ),
+                            'Category: ${event['category']} | Status: ${event['status']}',
+                            style: TextStyle(color: Colors.brown[600]),
                           ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
                                 icon: Icon(Icons.edit, color: Colors.brown),
-                                onPressed: () {
-                                  _showEditEventDialog(index);
-                                },
+                                onPressed: () => _showEditEventDialog(index),
                               ),
                               IconButton(
                                 icon: Icon(Icons.delete, color: Colors.brown),
-                                onPressed: () {
-                                  setState(() {
-                                    eventController.deleteEvent(index);
-                                  });
+                                onPressed: () async {
+                                  await eventController.deleteEvent(index);
+                                  _loadEvents();
                                 },
                               ),
                             ],
@@ -126,130 +119,254 @@ class _EventListPageState extends State<EventListPage> {
 
   void _showAddEventDialog() {
     TextEditingController nameController = TextEditingController();
+    TextEditingController locationController = TextEditingController();
+    TextEditingController dateController = TextEditingController(); // Controller for the event date field
     String? selectedCategory;
-    DateTime selectedDate = DateTime.now();
 
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Add New Event'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(labelText: 'Event Name'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text('Add New Event', style: TextStyle(color: Colors.brown)),
+            content: SingleChildScrollView(
+              child: Column(
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Event Name',
+                      labelStyle: TextStyle(color: Colors.brown),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextField(
+                    controller: locationController,
+                    decoration: InputDecoration(
+                      labelText: 'Location',
+                      labelStyle: TextStyle(color: Colors.brown),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: selectedCategory,
+                    onChanged: (value) {
+                      setDialogState(() {
+                        selectedCategory = value;
+                      });
+                    },
+                    items: ['Birthday', 'Anniversary', 'Graduation']
+                        .map((category) => DropdownMenuItem(
+                      value: category,
+                      child: Text(category),
+                    ))
+                        .toList(),
+                    decoration: InputDecoration(
+                      labelText: 'Event Category',
+                      labelStyle: TextStyle(color: Colors.brown),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextField(
+                    controller: dateController,
+                    readOnly: true,
+                    onTap: () async {
+                      final pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (pickedDate != null) {
+                        setDialogState(() {
+                          dateController.text =
+                          '${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}';
+                        });
+                      }
+                    },
+                    decoration: InputDecoration(
+                      labelText: 'Event Date',
+                      labelStyle: TextStyle(color: Colors.brown),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
               ),
-              DropdownButtonFormField<String>(
-                value: selectedCategory,
-                onChanged: (value) {
-                  setState(() {
-                    selectedCategory = value;
-                  });
-                },
-                items: ['Birthday', 'Anniversary', 'Graduation']
-                    .map((category) => DropdownMenuItem(
-                  value: category,
-                  child: Text(category),
-                ))
-                    .toList(),
-                decoration: InputDecoration(labelText: 'Event Category'),
+            ),
+            actions: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end, // Align to the right
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: Colors.brown,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10), // Add some spacing between buttons
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (nameController.text.isNotEmpty &&
+                          selectedCategory != null &&
+                          dateController.text.isNotEmpty) {
+                        await eventController.addEventForLoggedInUser(
+                          nameController.text,
+                          selectedCategory!,
+                          locationController.text,
+                          DateTime.parse(dateController.text),
+                        );
+                        _loadEvents();
+                        Navigator.pop(context);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.brown,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero, // No rounded corners
+                      ),
+                    ),
+                    child: Text(
+                      'Save',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.brown,
-              ),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (nameController.text.isNotEmpty && selectedCategory != null) {
-                  await eventController.addEventForLoggedInUser(
-                    nameController.text,
-                    selectedCategory!,
-                    selectedDate,
-                  );
-                  _loadEvents();
-                  Navigator.of(context).pop();
-                } else {
-                  print('Name or category is empty!');
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.brown,
-                foregroundColor: Colors.white,
-              ),
-              child: Text('Add'),
-            ),
-          ],
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
   void _showEditEventDialog(int index) {
-    TextEditingController nameController =
-    TextEditingController(text: eventController.events[index]['name']);
-    TextEditingController categoryController =
-    TextEditingController(text: eventController.events[index]['category']);
+    final event = eventController.events[index];
+    TextEditingController nameController = TextEditingController(text: event['name']);
+    TextEditingController locationController = TextEditingController(text: event['location']);
+    TextEditingController dateController = TextEditingController(
+        text: DateTime.parse(event['date']).toLocal().toString().split(' ')[0]);
+    String? selectedCategory = event['category'];
 
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Edit Event'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(labelText: 'Event Name'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text('Edit Event', style: TextStyle(color: Colors.brown)),
+            content: SingleChildScrollView(
+              child: Column(
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Event Name',
+                      labelStyle: TextStyle(color: Colors.brown),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextField(
+                    controller: locationController,
+                    decoration: InputDecoration(
+                      labelText: 'Location',
+                      labelStyle: TextStyle(color: Colors.brown),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: selectedCategory,
+                    onChanged: (value) {
+                      setDialogState(() {
+                        selectedCategory = value!;
+                      });
+                    },
+                    items: ['Birthday', 'Anniversary', 'Graduation']
+                        .map((category) => DropdownMenuItem(
+                      value: category,
+                      child: Text(category),
+                    ))
+                        .toList(),
+                    decoration: InputDecoration(
+                      labelText: 'Event Category',
+                      labelStyle: TextStyle(color: Colors.brown),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextField(
+                    controller: dateController,
+                    readOnly: true,
+                    onTap: () async {
+                      final pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.parse(event['date']),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (pickedDate != null) {
+                        setDialogState(() {
+                          dateController.text =
+                          '${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}';
+                        });
+                      }
+                    },
+                    decoration: InputDecoration(
+                      labelText: 'Event Date',
+                      labelStyle: TextStyle(color: Colors.brown),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
               ),
-              TextField(
-                controller: categoryController,
-                decoration: InputDecoration(labelText: 'Event Category'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text('Cancel', style: TextStyle(color: Colors.brown)),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (nameController.text.isNotEmpty &&
+                      selectedCategory != null &&
+                      dateController.text.isNotEmpty) {
+                    await eventController.editEvent(
+                      index,
+                      nameController.text,
+                      selectedCategory!,
+                      locationController.text,
+                      DateTime.parse(dateController.text),
+                    );
+                    _loadEvents();
+                    Navigator.pop(context);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.brown,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero, // Ensures no rounded corners
+                  ),
+                ),
+                child: Text(
+                  'Save',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.brown,
-              ),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (nameController.text.isNotEmpty &&
-                    categoryController.text.isNotEmpty) {
-                  await eventController.editEvent(
-                    index,
-                    nameController.text,
-                    categoryController.text,
-                  );
-                  _loadEvents();
-                  Navigator.of(context).pop();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.brown,
-                foregroundColor: Colors.white,
-              ),
-              child: Text('Save'),
-            ),
-          ],
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -263,30 +380,34 @@ class _EventListPageState extends State<EventListPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                title: Text('Sort by Name'),
+                title: Text('Sort by Name', style: TextStyle(color: Colors.brown)),
                 onTap: () {
                   setState(() {
-                    eventController.events.sort((a, b) => a['name'].compareTo(b['name']));
+                    final mutableEvents = List<Map<String, dynamic>>.from(eventController.events);
+                    mutableEvents.sort((a, b) => a['name'].compareTo(b['name']));
+                    eventController.events = mutableEvents;
                   });
                   Navigator.pop(context);
                 },
               ),
               ListTile(
-                title: Text('Sort by Category'),
+                title: Text('Sort by Category', style: TextStyle(color: Colors.brown)),
                 onTap: () {
                   setState(() {
-                    eventController.events.sort(
-                            (a, b) => a['category'].compareTo(b['category']));
+                    final mutableEvents = List<Map<String, dynamic>>.from(eventController.events);
+                    mutableEvents.sort((a, b) => a['category'].compareTo(b['category']));
+                    eventController.events = mutableEvents;
                   });
                   Navigator.pop(context);
                 },
               ),
               ListTile(
-                title: Text('Sort by Status'),
+                title: Text('Sort by Status', style: TextStyle(color: Colors.brown)),
                 onTap: () {
                   setState(() {
-                    eventController.events.sort(
-                            (a, b) => a['status'].compareTo(b['status']));
+                    final mutableEvents = List<Map<String, dynamic>>.from(eventController.events);
+                    mutableEvents.sort((a, b) => a['status'].compareTo(b['status']));
+                    eventController.events = mutableEvents;
                   });
                   Navigator.pop(context);
                 },

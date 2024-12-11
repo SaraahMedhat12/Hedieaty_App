@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../controllers/profile_controller.dart';
+import 'login.dart';
 import 'pledged_gifts.dart';
 
 class ProfilePage extends StatefulWidget {
-  final int userId; // Pass the logged-in user's ID
+  final int userId;
   ProfilePage({required this.userId});
 
   @override
@@ -19,10 +20,9 @@ class _ProfilePageState extends State<ProfilePage> {
     _initializeProfile();
   }
 
-  // Initialize profile data
   Future<void> _initializeProfile() async {
     await _controller.loadUserProfile(widget.userId);
-    setState(() {}); // Trigger UI update after loading data
+    setState(() {});
   }
 
   @override
@@ -35,7 +35,7 @@ class _ProfilePageState extends State<ProfilePage> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context); // Navigate back
+            Navigator.pop(context);
           },
         ),
       ),
@@ -53,7 +53,6 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Profile Image
                   Center(
                     child: CircleAvatar(
                       radius: 60,
@@ -61,8 +60,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   SizedBox(height: 20),
-
-                  // Name
                   Center(
                     child: Text(
                       _controller.username,
@@ -73,13 +70,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                   ),
-
-                  // Profile details
                   _buildProfileDetail('Phone Number', _controller.phoneNumber, Icons.phone),
                   _buildProfileDetail('Birthday', '${_controller.birthday.toLocal()}'.split(' ')[0], Icons.cake),
                   SizedBox(height: 20),
-
-                  // Button to update personal information
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -99,8 +92,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   SizedBox(height: 20),
                   Divider(thickness: 10, color: Colors.brown),
                   SizedBox(height: 50),
-
-                  // Created Events Section
                   Text(
                     'Your Created Events',
                     style: TextStyle(
@@ -109,15 +100,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       color: Colors.brown[900],
                     ),
                   ),
-
-                  // Events List
                   _buildEventsList(),
-
                   SizedBox(height: 20),
                   Divider(thickness: 10, color: Colors.brown),
                   SizedBox(height: 50),
-
-                  // Link to My Pledged Gifts Page
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -141,13 +127,14 @@ class _ProfilePageState extends State<ProfilePage> {
                   SizedBox(height: 20),
                   Divider(thickness: 10, color: Colors.brown),
                   SizedBox(height: 50),
-
-                  // Logout Button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        // Handle logout logic here
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => LoginPage()),
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.brown,
@@ -169,7 +156,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Helper widget to build profile details
   Widget _buildProfileDetail(String label, String value, IconData icon) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -191,25 +177,41 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Helper widget to build events list
   Widget _buildEventsList() {
     return ListView.builder(
       shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(), // Prevent internal scrolling
+      physics: NeverScrollableScrollPhysics(),
       itemCount: _controller.events.length,
       itemBuilder: (context, index) {
-        return Card(
+        return Container(
           margin: EdgeInsets.symmetric(vertical: 5),
-          child: ListTile(
-            title: Text(_controller.events[index]),
-            subtitle: Text('Associated Gifts: ${_controller.associatedGifts.join(", ")}'),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.brown, width: 1.5), // Brown border
+            borderRadius: BorderRadius.circular(10), // Rounded corners
+          ),
+          child: Card(
+            elevation: 0, // Remove Card's default shadow
+            margin: EdgeInsets.zero, // Align Card's content with the container
+            child: ListTile(
+              title: Text(
+                _controller.events[index],
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.brown[800], // Optional: Brown text color
+                ),
+              ),
+              subtitle: Text(
+                'Associated Gifts: ${_controller.associatedGifts.join(", ")}',
+                style: TextStyle(color: Colors.brown[600]), // Optional: Brown subtitle
+              ),
+            ),
           ),
         );
       },
     );
   }
 
-  // Method to show update dialog
+
   void _showUpdateDialog() {
     final phoneController = TextEditingController(text: _controller.phoneNumber);
     final birthdayController = TextEditingController(text: '${_controller.birthday.toLocal()}'.split(' ')[0]);
@@ -244,14 +246,14 @@ class _ProfilePageState extends State<ProfilePage> {
                   newPhoneNumber: phoneController.text,
                   newBirthday: DateTime.parse(birthdayController.text),
                 );
-                setState(() {}); // Refresh the UI
-                Navigator.of(context).pop(); // Close dialog
+                setState(() {});
+                Navigator.of(context).pop();
               },
               child: Text('Save'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close dialog without saving
+                Navigator.of(context).pop();
               },
               child: Text('Cancel'),
             ),

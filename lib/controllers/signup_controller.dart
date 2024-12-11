@@ -64,6 +64,7 @@ class SignupControllers {
     }
   }
 
+
   // Validate user input
   String? validateField(String? value, String fieldName) {
     if (value == null || value.trim().isEmpty) {

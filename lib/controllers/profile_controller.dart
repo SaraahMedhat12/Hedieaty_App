@@ -39,11 +39,14 @@ class ProfileController {
           for (var event in userEvents) {
             if (event['id'] != null) {
               final gifts = await _dbHelper.getAllGiftsForEvent(event['id']);
-              if (gifts != null && gifts.isNotEmpty) {
-                associatedGifts.addAll(gifts.map<String>((gift) => gift['name'] as String).toList()); // Map to List<String>
+              if (gifts.isNotEmpty) {
+                associatedGifts.addAll(
+                  gifts.map<String>((gift) => gift['name']?.toString() ?? '').where((name) => name.isNotEmpty).toList(),
+                );
               }
             }
           }
+
         } else {
           print('No events found for this user.');
           events = ['No events available'];  // Add a message indicating no events

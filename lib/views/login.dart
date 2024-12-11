@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'signup.dart';
 import '../controllers/signup_controller.dart'; // Reusing the controllers
-import '../views/homepage.dart';
-import '../database.dart';
+import 'homepage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
@@ -11,67 +11,111 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final SignupControllers _signupControllers = SignupControllers(); // Initialize the controllers for email and password
+  final SignupControllers _signupControllers = SignupControllers();
 
   @override
   void dispose() {
-    _signupControllers.dispose(); // Dispose controllers when the widget is destroyed
+    _signupControllers.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Hedieaty - Login'),
-        backgroundColor: Colors.brown,
-        foregroundColor: Colors.white,
-      ),
-      body: Stack(
-        children: [
-          // Background Image
-          SingleChildScrollView(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.brown.shade900, Colors.brown.shade400],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Container(
-                padding: EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
-                  border: Border.all(color: Colors.brown, width: 2.0),
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: 20),
-                      _buildLabelAndTextField(
-                        labelText: 'Email',
-                        controller: _signupControllers.emailController,
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      SizedBox(height: 16),
-                      _buildLabelAndTextField(
-                        labelText: 'Password',
-                        controller: _signupControllers.passwordController,
-                        keyboardType: TextInputType.visiblePassword,
-                        obscureText: true,
-                      ),
-                      SizedBox(height: 32),
-                      _buildLoginButton(),
-                    ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // App Logo or Placeholder
+                  Icon(
+                    Icons.lock_outline,
+                    size: 80,
+                    color: Colors.white,
                   ),
-                ),
+                  SizedBox(height: 20),
+
+                  // Welcome Back Text
+                  Text(
+                    'Welcome Back To Hedieaty App!',
+                    style: TextStyle(
+                      fontSize: 22.0,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 1.2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Please login to continue.',
+                    style: TextStyle(
+                      fontSize: 16.0,
+                      color: Colors.white70,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 30),
+
+                  // Login Card
+                  Container(
+                    padding: EdgeInsets.all(16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16.0),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.brown.shade300,
+                          blurRadius: 10,
+                          offset: Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabelAndTextField(
+                            labelText: 'Email',
+                            controller: _signupControllers.emailController,
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          SizedBox(height: 16),
+                          _buildLabelAndTextField(
+                            labelText: 'Password',
+                            controller: _signupControllers.passwordController,
+                            keyboardType: TextInputType.visiblePassword,
+                            obscureText: true,
+                          ),
+                          SizedBox(height: 32),
+                          _buildLoginButton(),
+                          SizedBox(height: 20),
+                          _buildSignupLink(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  // Method to build input fields
   Widget _buildLabelAndTextField({
     required String labelText,
     required TextEditingController controller,
@@ -95,13 +139,15 @@ class _LoginPageState extends State<LoginPage> {
           keyboardType: keyboardType,
           obscureText: obscureText,
           decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.brown.shade50,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8.0),
               borderSide: BorderSide(color: Colors.brown),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8.0),
-              borderSide: BorderSide(color: Colors.brown, width: 2),
+              borderSide: BorderSide(color: Colors.brown.shade700, width: 2),
             ),
           ),
           validator: (value) =>
@@ -111,7 +157,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // Build "Login" button
   Widget _buildLoginButton() {
     return SizedBox(
       width: double.infinity,
@@ -121,29 +166,22 @@ class _LoginPageState extends State<LoginPage> {
             final email = _signupControllers.emailController.text.trim();
             final password = _signupControllers.passwordController.text.trim();
 
-            // Authenticate user
-            bool isAuthenticated = await _signupControllers.authenticateUser(email, password);
+            bool isAuthenticated =
+            await _signupControllers.authenticateUser(email, password);
 
             if (isAuthenticated) {
-              // Fetch the user by email to get user details
               var user = await _signupControllers.getUserByEmail(email);
-
               if (user != null) {
-                int userId = user['id']; // Get the userId from the returned user data
-
-                // Store userId in SharedPreferences
-                SharedPreferences prefs = await SharedPreferences.getInstance();
+                int userId = user['id'];
+                SharedPreferences prefs =
+                await SharedPreferences.getInstance();
                 await prefs.setInt('userId', userId);
 
-                print('Login successful! User ID: $userId');
-
-                // Navigate to the home page or the next screen
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => HomePage()),
                 );
               } else {
-                print('User not found');
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('User not found.'),
@@ -152,8 +190,6 @@ class _LoginPageState extends State<LoginPage> {
                 );
               }
             } else {
-              // Handle authentication failure
-              print('Authentication failed');
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('Login failed: Invalid email or password.'),
@@ -169,7 +205,32 @@ class _LoginPageState extends State<LoginPage> {
         ),
         child: Text(
           'Log In',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white, fontSize: 16.0),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSignupLink() {
+    return TextButton(
+      onPressed: () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => SignupPage()),
+        );
+      },
+      child: Center(
+        child: Text(
+          'Don\'t have an account? Sign Up',
+          style: TextStyle(
+            color: Colors.brown.shade900,
+            fontWeight: FontWeight.bold,
+            decoration: TextDecoration.underline,
+            decorationColor: Colors.brown.shade700,
+            decorationThickness: 2.0,
+            fontSize: 16.0,
+          ),
+          textAlign: TextAlign.center,
         ),
       ),
     );
