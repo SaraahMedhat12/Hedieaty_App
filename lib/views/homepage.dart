@@ -5,6 +5,7 @@ import 'pledged_gifts.dart';
 import 'profile.dart';
 import 'gift_list.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // For shared preferences
+import '../firebase.dart'; // Make sure to import FirebaseService
 
 class HomePage extends StatefulWidget {
   @override
@@ -63,7 +64,8 @@ class _HomePageState extends State<HomePage> {
       _selectedIndex = index;
     });
 
-    if (index == 4) { // Assuming 4 is the index for the ProfilePage
+    if (index == 4) {
+      // Assuming 4 is the index for the ProfilePage
       final userId = await _getUserIdFromPrefs();
       if (userId != null) {
         setState(() {
@@ -96,7 +98,7 @@ class _HomePageState extends State<HomePage> {
       body: _pages[_selectedIndex], // Display the content of the selected page
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
+        onTap: _onItemTapped,
         backgroundColor: Colors.brown, // Brown background
         selectedItemColor: Colors.white, // White for selected items
         unselectedItemColor: Colors.brown[200], // Lighter brown for unselected items
@@ -128,24 +130,33 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class HomePageContent extends StatelessWidget {
-  final List<Map<String, dynamic>> friends = [
-    {
-      'name': 'Sarah',
-      'profilePic': 'assets/bg2.jpeg',
-      'upcomingEvents': 1,
-    },
-    {
-      'name': 'Mariam',
-      'profilePic': 'assets/p3.jpeg',
-      'upcomingEvents': 0,
-    },
-    {
-      'name': 'Malak',
-      'profilePic': 'assets/bg3.jpeg',
-      'upcomingEvents': 2,
-    },
-  ];
+class HomePageContent extends StatefulWidget {
+  @override
+  _HomePageContentState createState() => _HomePageContentState();
+}
+
+class _HomePageContentState extends State<HomePageContent> {
+  late FirebaseService _firebaseService;
+  List<Map<String, dynamic>> _friends = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _firebaseService = FirebaseService();
+    _loadFriends();
+  }
+
+  Future<void> _loadFriends() async {
+    try {
+      List<Map<String, dynamic>> friendsList = await _firebaseService.getFriends();
+      setState(() {
+        _friends = friendsList;
+      });
+      print("Friends loaded successfully: $_friends");
+    } catch (e) {
+      print("Error loading friends: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +184,7 @@ class HomePageContent extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: () => _showAddWizardDialog(context),
                     icon: Icon(Icons.create),
-                    label: Text('Add Event or Gift'),
+                    label: Text('Add a New Event/Gift List '),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.brown,
                       foregroundColor: Colors.white,
@@ -188,8 +199,13 @@ class HomePageContent extends StatelessWidget {
                 SizedBox(height: 20),
                 Expanded(
                   child: ListView.builder(
-                    itemCount: friends.length,
+                    itemCount: _friends.length,
                     itemBuilder: (context, index) {
+                      final friend = _friends[index];
+                      final name = friend['username'] ?? 'Unknown'; // Default name
+                      final profilePic = friend['profilePic'] ?? 'assets/bg2.jpeg'; // Default profile picture
+                      final upcomingEvents = friend['upcomingEvents'] ?? 0; // Default to 0 events
+
                       return Card(
                         elevation: 4,
                         margin: EdgeInsets.symmetric(vertical: 8.0),
@@ -199,11 +215,11 @@ class HomePageContent extends StatelessWidget {
                         ),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundImage: AssetImage(friends[index]['profilePic']),
+                            backgroundImage: AssetImage(profilePic),
                             radius: 30,
                           ),
                           title: Text(
-                            friends[index]['name'],
+                            name,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
@@ -211,14 +227,19 @@ class HomePageContent extends StatelessWidget {
                             ),
                           ),
                           subtitle: Text(
-                            friends[index]['upcomingEvents'] > 0
-                                ? 'Upcoming Events: ${friends[index]['upcomingEvents']}'
+                            upcomingEvents > 0
+                                ? 'Upcoming Events: $upcomingEvents'
                                 : 'No Upcoming Events',
                             style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                           ),
                           trailing: Icon(Icons.arrow_forward_ios, color: Colors.brown),
                           onTap: () {
-                            // Navigate to friend's gift list page
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => EventListPage(friendId: friend['uid']), // Pass the user ID
+                              ),
+                            );
                           },
                         ),
                       );
@@ -235,7 +256,6 @@ class HomePageContent extends StatelessWidget {
 
   void _showAddFriendWizard(BuildContext context) {
     TextEditingController nameController = TextEditingController();
-    TextEditingController phoneController = TextEditingController();
 
     showDialog(
       context: context,
@@ -245,52 +265,50 @@ class HomePageContent extends StatelessWidget {
             'Add Friend',
             style: TextStyle(color: Colors.brown, fontWeight: FontWeight.bold),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: 'Friend\'s Name',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 10),
-              TextField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  labelText: 'Friend\'s Phone Number',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
+          content: TextField(
+            controller: nameController,
+            decoration: InputDecoration(
+              labelText: 'Username',
+              border: OutlineInputBorder(),
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
+                Navigator.of(context).pop(); // Close dialog
               },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.brown,
-              ),
               child: Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty &&
-                    phoneController.text.isNotEmpty) {
-                  print(
-                      'Friend added: Name: ${nameController.text}, Phone: ${phoneController.text}');
-                  Navigator.of(context).pop(); // Close the dialog
+              onPressed: () async {
+                String username = nameController.text.trim();
+
+                if (username.isNotEmpty) {
+                  try {
+                    await _firebaseService.addFriendByUsername(username);
+                    if (mounted) {
+                      Navigator.of(context).pop(); // Close the dialog
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Friend $username added successfully')),
+                      );
+                      await _loadFriends(); // Reload friends list
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      Navigator.of(context).pop(); // Close the dialog
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error adding friend: $e')),
+                      );
+                    }
+                  }
                 } else {
-                  print('Fields are empty!'); // Debugging statement
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Please enter a username')),
+                    );
+                  }
                 }
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.brown,
-                foregroundColor: Colors.white,
-              ),
               child: Text('Add Friend'),
             ),
           ],
@@ -318,7 +336,7 @@ class HomePageContent extends StatelessWidget {
                 Navigator.pop(context); // Close the dialog
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => EventListPage()),
+                  MaterialPageRoute(builder: (context) => EventListPage()), // No friendId passed
                 );
               },
               style: ElevatedButton.styleFrom(

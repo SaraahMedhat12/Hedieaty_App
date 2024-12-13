@@ -29,7 +29,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -46,6 +46,7 @@ class DatabaseHelper {
         email TEXT NOT NULL UNIQUE,
         password TEXT NOT NULL,
         preferences TEXT
+        upcomingEvents INTEGER DEFAULT 0
       )
     ''');
 
@@ -97,11 +98,11 @@ class DatabaseHelper {
 
   void _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      // Example migration: Adding a new column to Users
-      await db.execute('ALTER TABLE Users ADD COLUMN profile_picture TEXT');
+      // Add the `upcomingEvents` column if it doesn't exist
+      await db.execute('ALTER TABLE Users ADD COLUMN upcomingEvents INTEGER DEFAULT 0');
     }
-    // Add further migrations for newer versions as needed
   }
+
 
   // CRUD Operations for Users
   Future<int> insertUser(Map<String, dynamic> user) async {
@@ -337,19 +338,20 @@ class DatabaseHelper {
 
 // Get all events for a specific user
   Future<List<Map<String, dynamic>>> getAllEventsForUser(int userId) async {
-    final db = await database; // Using the singleton database instance
+    final db = await database;
     try {
-      final result = await db.query(
-        'Events',
-        where: 'user_id = ?',
-        whereArgs: [userId],
+      final result = await db.rawQuery(
+        'SELECT DISTINCT * FROM Events WHERE user_id = ?',
+        [userId],
       );
-      return result;
+      return List<Map<String, dynamic>>.from(result); // Ensure a mutable list
     } catch (e) {
-      print("Error fetching events for user: $e");
+      print('Error fetching events for user: $e');
       return [];
     }
   }
+
+
 
 
 // Update an event for a specific user
@@ -516,5 +518,52 @@ class DatabaseHelper {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('userId');
   }
+
+  Future<void> incrementUpcomingEvents(int userId) async {
+    final db = await database;
+    await db.rawUpdate(
+      "UPDATE Users SET upcomingEvents = upcomingEvents + 1 WHERE id = ?",
+      [userId],
+    );
+  }
+
+
+  Future<List<Map<String, dynamic>>> getFriendsWithUpcomingEvents(int userId) async {
+    final db = await database;
+    return await db.rawQuery(
+      '''
+    SELECT friends.id, friends.name, friends.upcomingEvents 
+    FROM friends
+    JOIN users ON friends.friend_id = users.id
+    WHERE users.id = ?
+    ''',
+      [userId],
+    );
+  }
+
+  // Update upcomingEvents count for a user
+  Future<void> updateUpcomingEventsCount(int userId, int upcomingEvents) async {
+    try {
+      // Ensure the database is properly initialized
+      final db = await database; // Use the existing database getter
+
+
+      // Perform the raw update query
+      int count = await db.rawUpdate(
+        'UPDATE users SET upcomingEvents = ? WHERE id = ?',
+        [upcomingEvents, userId],
+      );
+
+      if (count > 0) {
+        print('Updated upcomingEvents to $upcomingEvents for userId: $userId');
+      } else {
+        print('No rows updated for userId: $userId');
+      }
+    } catch (e) {
+      print('Error updating upcomingEvents count: $e');
+    }
+  }
+
+
 }
 

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../controllers/event_controller.dart';
 
 class EventListPage extends StatefulWidget {
+  final String? friendId; // Optional friend ID
+
+  EventListPage({this.friendId}); // Default is null for logged-in user
+
   @override
   _EventListPageState createState() => _EventListPageState();
 }
@@ -16,16 +20,23 @@ class _EventListPageState extends State<EventListPage> {
   }
 
   Future<void> _loadEvents() async {
-    await eventController.loadEventsForLoggedInUser();
-    setState(() {}); // Update UI after fetching events
+    if (widget.friendId != null && widget.friendId!.isNotEmpty) {
+      await eventController.loadEventsForFriend(widget.friendId!);
+    } else {
+      await eventController.loadEventsForLoggedInUser();
+    }
+    setState(() {}); // Refresh UI
   }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Hedieaty - Event List',
+          widget.friendId == null
+              ? 'My Events' // For the logged-in user
+              : 'Friend\'s Events', // For the friend's list
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.brown,
@@ -48,24 +59,34 @@ class _EventListPageState extends State<EventListPage> {
             padding: const EdgeInsets.all(12.0),
             child: Column(
               children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _showAddEventDialog,
-                    icon: Icon(Icons.add),
-                    label: Text('Add New Event'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.brown,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: 16.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                if (widget.friendId == null) // Show "Add New Event" only for logged-in user
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _showAddEventDialog,
+                      icon: Icon(Icons.add),
+                      label: Text('Add New Event'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.brown,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
-                ),
                 Expanded(
-                  child: ListView.builder(
+                  child: eventController.events.isEmpty
+                      ? Center(
+                    child: Text(
+                      widget.friendId == null
+                          ? 'No events found. Add one now!'
+                          : 'No events found for this friend.',
+                      style: TextStyle(color: Colors.brown, fontSize: 16),
+                    ),
+                  )
+                      : ListView.builder(
                     itemCount: eventController.events.length,
                     itemBuilder: (context, index) {
                       final event = eventController.events[index];
@@ -88,7 +109,8 @@ class _EventListPageState extends State<EventListPage> {
                             'Category: ${event['category']} | Status: ${event['status']}',
                             style: TextStyle(color: Colors.brown[600]),
                           ),
-                          trailing: Row(
+                          trailing: widget.friendId == null
+                              ? Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
@@ -103,7 +125,8 @@ class _EventListPageState extends State<EventListPage> {
                                 },
                               ),
                             ],
-                          ),
+                          )
+                              : null, // No edit/delete for friend's events
                         ),
                       );
                     },
@@ -197,49 +220,31 @@ class _EventListPageState extends State<EventListPage> {
               ),
             ),
             actions: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end, // Align to the right
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: Text(
-                      'Cancel',
-                      style: TextStyle(
-                        color: Colors.brown,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10), // Add some spacing between buttons
-                  ElevatedButton(
-                    onPressed: () async {
-                      if (nameController.text.isNotEmpty &&
-                          selectedCategory != null &&
-                          dateController.text.isNotEmpty) {
-                        await eventController.addEventForLoggedInUser(
-                          nameController.text,
-                          selectedCategory!,
-                          locationController.text,
-                          DateTime.parse(dateController.text),
-                        );
-                        _loadEvents();
-                        Navigator.pop(context);
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.brown,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero, // No rounded corners
-                      ),
-                    ),
-                    child: Text(
-                      'Save',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text('Cancel', style: TextStyle(color: Colors.brown)),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (nameController.text.isNotEmpty &&
+                      selectedCategory != null &&
+                      dateController.text.isNotEmpty) {
+                    await eventController.addEventForLoggedInUser(
+                      nameController.text,
+                      selectedCategory!,
+                      locationController.text,
+                      DateTime.parse(dateController.text),
+                    );
+                    _loadEvents();
+                    Navigator.pop(context);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.brown,
+                ),
+                child: Text('Save', style: TextStyle(color: Colors.white)),
               ),
             ],
           );
@@ -248,7 +253,8 @@ class _EventListPageState extends State<EventListPage> {
     );
   }
 
-  void _showEditEventDialog(int index) {
+
+void _showEditEventDialog(int index) {
     final event = eventController.events[index];
     TextEditingController nameController = TextEditingController(text: event['name']);
     TextEditingController locationController = TextEditingController(text: event['location']);
@@ -354,14 +360,8 @@ class _EventListPageState extends State<EventListPage> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.brown,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero, // Ensures no rounded corners
-                  ),
                 ),
-                child: Text(
-                  'Save',
-                  style: TextStyle(color: Colors.white),
-                ),
+                child: Text('Save', style: TextStyle(color: Colors.white)),
               ),
             ],
           );
