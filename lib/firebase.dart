@@ -120,6 +120,7 @@ class FirebaseService {
           .collection('users')
           .doc(friendId)
           .collection('events')
+          .orderBy('date') // Ensure events are sorted by date
           .get();
 
       return eventsSnapshot.docs.map((doc) {
@@ -129,6 +130,7 @@ class FirebaseService {
           'date': doc['date'],
           'location': doc['location'],
           'description': doc['description'],
+          'status': _determineEventStatus(DateTime.parse(doc['date'])),
         };
       }).toList();
     } catch (e) {
@@ -142,32 +144,12 @@ class FirebaseService {
       String name, String date, String location, String description) async {
     User? user = _auth.currentUser;
     if (user != null) {
-      try {
-        // Add the event under the logged-in user's document
-        await _firestore
-            .collection('users')
-            .doc(user.uid)
-            .collection('events')
-            .add({
-          'name': name,
-          'date': date,
-          'location': location,
-          'description': description,
-        });
-
-        // Increment the upcoming events count if the event date is in the future
-        DateTime eventDate = DateTime.parse(date);
-        if (eventDate.isAfter(DateTime.now())) {
-          await _firestore.collection('users').doc(user.uid).update({
-            'upcomingEvents': FieldValue.increment(1),
-          });
-        }
-
-        print("Event added successfully for the logged-in user.");
-      } catch (e) {
-        print("Error adding event for the logged-in user: $e");
-        throw Exception("Failed to add event for the logged-in user.");
-      }
+      await addEventInFirebase(user.uid, {
+        'name': name,
+        'date': date,
+        'location': location,
+        'description': description,
+      });
     } else {
       throw Exception("No logged-in user found.");
     }
@@ -176,31 +158,108 @@ class FirebaseService {
   // Add event for a friend
   Future<void> addEventForFriend(
       String friendId, String name, String date, String location, String description) async {
-    try {
-      // Add the event under the friend's document
-      await _firestore
-          .collection('users')
-          .doc(friendId)
-          .collection('events')
-          .add({
-        'name': name,
-        'date': date,
-        'location': location,
-        'description': description,
-      });
+    await addEventInFirebase(friendId, {
+      'name': name,
+      'date': date,
+      'location': location,
+      'description': description,
+    });
+  }
 
-      // Increment the friend's upcoming events count if the event date is in the future
-      DateTime eventDate = DateTime.parse(date);
+  // Add an event in Firebase
+  Future<void> addEventInFirebase(String userId, Map<String, dynamic> eventData) async {
+    try {
+      await _firestore.collection('users').doc(userId).collection('events').add(eventData);
+
+      // Increment the upcoming events count if the event date is in the future
+      DateTime eventDate = DateTime.parse(eventData['date']);
       if (eventDate.isAfter(DateTime.now())) {
-        await _firestore.collection('users').doc(friendId).update({
+        await _firestore.collection('users').doc(userId).update({
           'upcomingEvents': FieldValue.increment(1),
         });
       }
 
-      print("Event added successfully for the friend.");
+      print("Event added successfully to Firebase for user: $userId");
     } catch (e) {
-      print("Error adding event for the friend: $e");
-      throw Exception("Failed to add event for the friend.");
+      print("Error adding event to Firebase: $e");
+      throw Exception("Failed to add event to Firebase.");
     }
+  }
+
+  // Get events from Firebase
+  Future<List<Map<String, dynamic>>> getEventsFromFirebase(String userId) async {
+    try {
+      final eventsSnapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('events')
+          .orderBy('date') // Sort by date
+          .get();
+
+      return eventsSnapshot.docs.map((doc) {
+        return {
+          'id': doc.id,
+          'name': doc['name'],
+          'date': doc['date'],
+          'location': doc['location'],
+          'description': doc['description'],
+          'status': _determineEventStatus(DateTime.parse(doc['date'])),
+        };
+      }).toList();
+    } catch (e) {
+      print("Error fetching events from Firebase for user $userId: $e");
+      return [];
+    }
+  }
+
+  // Update an event in Firebase
+  Future<void> editEventInFirebase(
+      String userId, String eventId, Map<String, dynamic> updatedData) async {
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('events')
+          .doc(eventId)
+          .update(updatedData);
+
+      print("Event updated successfully in Firebase for user: $userId");
+    } catch (e) {
+      print("Error updating event in Firebase: $e");
+      throw Exception("Failed to update event in Firebase.");
+    }
+  }
+
+  // Delete an event from Firebase
+  Future<void> deleteEventFromFirebase(String userId, String eventId, String eventDate) async {
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('events')
+          .doc(eventId)
+          .delete();
+
+      // Decrement the upcoming events count if the date is in the future
+      DateTime eventDateTime = DateTime.parse(eventDate);
+      if (eventDateTime.isAfter(DateTime.now())) {
+        await _firestore.collection('users').doc(userId).update({
+          'upcomingEvents': FieldValue.increment(-1),
+        });
+      }
+
+      print("Event deleted successfully from Firebase for user: $userId");
+    } catch (e) {
+      print("Error deleting event from Firebase: $e");
+      throw Exception("Failed to delete event from Firebase.");
+    }
+  }
+
+  // Helper to determine event status
+  String _determineEventStatus(DateTime eventDate) {
+    final now = DateTime.now();
+    if (eventDate.isBefore(now)) return 'Past';
+    if (eventDate.isAfter(now)) return 'Upcoming';
+    return 'Current';
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../controllers/event_controller.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class EventListPage extends StatefulWidget {
   final String? friendId; // Optional friend ID
@@ -12,6 +13,8 @@ class EventListPage extends StatefulWidget {
 
 class _EventListPageState extends State<EventListPage> {
   final EventController eventController = EventController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final bool useFirebase = true; // Toggle Firebase usage
 
   @override
   void initState() {
@@ -21,13 +24,21 @@ class _EventListPageState extends State<EventListPage> {
 
   Future<void> _loadEvents() async {
     if (widget.friendId != null && widget.friendId!.isNotEmpty) {
-      await eventController.loadEventsForFriend(widget.friendId!);
+      // For friend's events, always load from Firebase
+      await eventController.loadEventsFromFirebase(widget.friendId!);
     } else {
-      await eventController.loadEventsForLoggedInUser();
+      // For the logged-in user, choose between Firebase and local DB
+      if (useFirebase) {
+        final userId = _auth.currentUser?.uid;
+        if (userId != null) {
+          await eventController.loadEventsFromFirebase(userId);
+        }
+      } else {
+        await eventController.loadEventsForLoggedInUser();
+      }
     }
     setState(() {}); // Refresh UI
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +131,15 @@ class _EventListPageState extends State<EventListPage> {
                               IconButton(
                                 icon: Icon(Icons.delete, color: Colors.brown),
                                 onPressed: () async {
-                                  await eventController.deleteEvent(index);
+                                  if (useFirebase) {
+                                    await eventController.deleteEventFromFirebase(
+                                      _auth.currentUser!.uid,
+                                      event['id'],
+                                      event['date'],
+                                    );
+                                  } else {
+                                    await eventController.deleteEvent(index);
+                                  }
                                   _loadEvents();
                                 },
                               ),
@@ -143,7 +162,7 @@ class _EventListPageState extends State<EventListPage> {
   void _showAddEventDialog() {
     TextEditingController nameController = TextEditingController();
     TextEditingController locationController = TextEditingController();
-    TextEditingController dateController = TextEditingController(); // Controller for the event date field
+    TextEditingController dateController = TextEditingController();
     String? selectedCategory;
 
     showDialog(
@@ -155,23 +174,9 @@ class _EventListPageState extends State<EventListPage> {
             content: SingleChildScrollView(
               child: Column(
                 children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      labelText: 'Event Name',
-                      labelStyle: TextStyle(color: Colors.brown),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
+                  _buildTextField(nameController, 'Event Name'),
                   SizedBox(height: 10),
-                  TextField(
-                    controller: locationController,
-                    decoration: InputDecoration(
-                      labelText: 'Location',
-                      labelStyle: TextStyle(color: Colors.brown),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
+                  _buildTextField(locationController, 'Location'),
                   SizedBox(height: 10),
                   DropdownButtonFormField<String>(
                     value: selectedCategory,
@@ -193,29 +198,7 @@ class _EventListPageState extends State<EventListPage> {
                     ),
                   ),
                   SizedBox(height: 10),
-                  TextField(
-                    controller: dateController,
-                    readOnly: true,
-                    onTap: () async {
-                      final pickedDate = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                      );
-                      if (pickedDate != null) {
-                        setDialogState(() {
-                          dateController.text =
-                          '${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}';
-                        });
-                      }
-                    },
-                    decoration: InputDecoration(
-                      labelText: 'Event Date',
-                      labelStyle: TextStyle(color: Colors.brown),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
+                  _buildDateField(dateController, setDialogState),
                 ],
               ),
             ),
@@ -231,12 +214,25 @@ class _EventListPageState extends State<EventListPage> {
                   if (nameController.text.isNotEmpty &&
                       selectedCategory != null &&
                       dateController.text.isNotEmpty) {
-                    await eventController.addEventForLoggedInUser(
-                      nameController.text,
-                      selectedCategory!,
-                      locationController.text,
-                      DateTime.parse(dateController.text),
-                    );
+                    if (useFirebase) {
+                      await eventController.addEventToFirebase(
+                        _auth.currentUser!.uid,
+                        {
+                          'name': nameController.text,
+                          'category': selectedCategory!,
+                          'location': locationController.text,
+                          'date': dateController.text,
+                          'description': '',
+                        },
+                      );
+                    } else {
+                      await eventController.addEventForLoggedInUser(
+                        nameController.text,
+                        selectedCategory!,
+                        locationController.text,
+                        DateTime.parse(dateController.text),
+                      );
+                    }
                     _loadEvents();
                     Navigator.pop(context);
                   }
@@ -249,6 +245,43 @@ class _EventListPageState extends State<EventListPage> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.brown),
+        border: OutlineInputBorder(),
+      ),
+    );
+  }
+
+  Widget _buildDateField(TextEditingController dateController, Function setDialogState) {
+    return TextField(
+      controller: dateController,
+      readOnly: true,
+      onTap: () async {
+        final pickedDate = await showDatePicker(
+          context: context,
+          initialDate: DateTime.now(),
+          firstDate: DateTime(2000),
+          lastDate: DateTime(2100),
+        );
+        if (pickedDate != null) {
+          setDialogState(() {
+            dateController.text =
+            '${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}';
+          });
+        }
+      },
+      decoration: InputDecoration(
+        labelText: 'Event Date',
+        labelStyle: TextStyle(color: Colors.brown),
+        border: OutlineInputBorder(),
       ),
     );
   }
