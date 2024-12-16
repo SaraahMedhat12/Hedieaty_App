@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import '../auth_service.dart';
+import '../controllers/gift_controller.dart';
 import '../controllers/profile_controller.dart';
+import '../models/gift.dart';
 import 'login.dart';
 import 'pledged_gifts.dart';
+import '../controllers/gift_controller.dart';
 
 class ProfilePage extends StatefulWidget {
   final int userId;
@@ -13,6 +17,8 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final ProfileController _controller = ProfileController();
+  final GiftController _giftController = GiftController();
+
 
   @override
   void initState() {
@@ -178,38 +184,93 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildEventsList() {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: _controller.events.length,
-      itemBuilder: (context, index) {
-        return Container(
-          margin: EdgeInsets.symmetric(vertical: 5),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.brown, width: 1.5), // Brown border
-            borderRadius: BorderRadius.circular(10), // Rounded corners
-          ),
-          child: Card(
-            elevation: 0, // Remove Card's default shadow
-            margin: EdgeInsets.zero, // Align Card's content with the container
-            child: ListTile(
-              title: Text(
-                _controller.events[index],
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.brown[800], // Optional: Brown text color
+    final userId = AuthService.getCurrentUser()?.uid;
+
+    if (userId == null) {
+      return Center(child: Text("Error: User not authenticated"));
+    }
+
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _giftController.loadEventsForUser(userId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error loading events: ${snapshot.error}'));
+        }
+
+        final events = snapshot.data ?? [];
+        if (events.isEmpty) {
+          return Center(
+            child: Text("No events available.", style: TextStyle(fontSize: 18)),
+          );
+        }
+
+        return ListView.builder(
+          shrinkWrap: true, // Ensures the ListView wraps only its content
+          physics: NeverScrollableScrollPhysics(), // Prevents extra scrolling
+          padding: EdgeInsets.symmetric(horizontal: 8), // Adjust padding
+          itemCount: events.length,
+          itemBuilder: (context, index) {
+            final event = events[index];
+            final eventName = event['name'] ?? 'Unnamed Event';
+            final eventId = event['id'] ?? '';
+
+            return Container(
+              margin: EdgeInsets.only(bottom: 12), // Adjust spacing between items
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.brown, width: 1.5),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Card(
+                elevation: 2, // Reduce elevation to make it cleaner
+                margin: EdgeInsets.zero,
+                child: ListTile(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  title: Text(
+                    eventName.toUpperCase(),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.brown[800],
+                      fontSize: 18,
+                    ),
+                  ),
+                  subtitle: StreamBuilder<List<Gift>>(
+                    stream: _giftController.LoadGiftsForEvent(eventId),
+                    builder: (context, giftSnapshot) {
+                      if (giftSnapshot.connectionState == ConnectionState.waiting) {
+                        return Text('Loading gifts...', style: TextStyle(fontSize: 14));
+                      }
+
+                      final gifts = giftSnapshot.data ?? [];
+                      return Text(
+                        'Associated Gifts: ${gifts.isNotEmpty ? gifts.map((gift) => gift.name).join(", ") : "No gifts available"}',
+                        style: TextStyle(fontSize: 14, color: Colors.brown[600]),
+                      );
+                    },
+                  ),
                 ),
               ),
-              subtitle: Text(
-                'Associated Gifts: ${_controller.associatedGifts.join(", ")}',
-                style: TextStyle(color: Colors.brown[600]), // Optional: Brown subtitle
-              ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
   }
+
+
+
+
+  Future<void> _loadEvents() async {
+    if (_controller.events.isEmpty) {
+      await _controller.loadEventsFromFirebase("your_firebase_user_id"); // Pass the user ID
+      print("Events Loaded: ${_controller.events}");
+    }
+  }
+
+
 
 
   void _showUpdateDialog() {

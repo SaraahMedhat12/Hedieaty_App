@@ -2,19 +2,21 @@ class Gift {
   final String id;
   final String name;
   final String category;
-  final String status;
   final String description;
-  final double price;
   final bool isPledged;
+  final double price;
+  final String status;
+  final String eventId; // Add this field
 
   Gift({
     required this.id,
     required this.name,
     required this.category,
-    required this.status,
     required this.description,
+    required this.isPledged,
     required this.price,
-    required this.isPledged, required String eventId,
+    required this.status,
+    required this.eventId, // Initialize eventId
   });
 
   factory Gift.fromMap(String id, Map<String, dynamic> data) {
@@ -22,10 +24,11 @@ class Gift {
       id: id,
       name: data['name'] ?? '',
       category: data['category'] ?? '',
-      status: data['status'] ?? 'Available',
       description: data['description'] ?? '',
+      isPledged: data['isPledged'] ?? false,
       price: (data['price'] ?? 0).toDouble(),
-      isPledged: data['isPledged'] ?? false, eventId: '',
+      status: data['status'] ?? 'Available',
+      eventId: data['eventId'] ?? '', // Parse eventId
     );
   }
 
@@ -33,10 +36,11 @@ class Gift {
     return {
       'name': name,
       'category': category,
-      'status': status,
       'description': description,
-      'price': price,
       'isPledged': isPledged,
+      'price': price,
+      'status': status,
+      'eventId': eventId, // Add eventId to Firestore
     };
   }
 }

@@ -11,6 +11,9 @@ class GiftController {
   // Load gifts for a specific event
   Stream<List<Gift>> LoadGiftsForEvent(String eventId) {
     final currentUser = AuthService.getCurrentUser();
+    print("Fetching gifts for event ID: $eventId"); // Add this debug line
+
+
     if (currentUser != null) {
       // Query the gifts subcollection under the specific event
       return FirebaseFirestore.instance
@@ -21,7 +24,9 @@ class GiftController {
           .collection('gifts')
           .snapshots()
           .map((snapshot) {
+        print("Gifts Snapshot: ${snapshot.docs.length} docs found"); // Add this debug line
         return snapshot.docs.map((doc) {
+          print("Gift Data: ${doc.data()}"); // Print each gift data
           return Gift.fromMap(doc.id, doc.data());
         }).toList();
       });
