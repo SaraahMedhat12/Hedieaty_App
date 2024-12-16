@@ -2,22 +2,25 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 
+
 class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // User Registration (sign-up)
-  Future<User?> signUp(String email, String password) async {
+  Future<User?> signUp(String email, String password, String localId) async {
     try {
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
           email: email, password: password);
-      await _addUserToFirestore(userCredential.user); // Add user to Firestore
+
+      await _addUserToFirestore(userCredential.user, localId); // Add user to Firestore
       return userCredential.user;
     } catch (e) {
       print("Error during sign-up: $e");
       return null;
     }
   }
+
 
   // User login (sign-in)
   Future<User?> signIn(String email, String password) async {
@@ -36,48 +39,6 @@ class FirebaseService {
     await _auth.signOut();
   }
 
-  // Add user to Firestore
-  Future<void> _addUserToFirestore(User? user) async {
-    if (user != null) {
-      await _firestore.collection('users').doc(user.uid).set({
-        'email': user.email,
-        'username': user.displayName ?? 'No Name',
-        'friends': [],
-        'upcomingEvents': 0, // Initialize upcoming events to 0
-      });
-    }
-  }
-
-  // Add a friend by friend's username
-  Future<void> addFriendByUsername(String friendUsername) async {
-    User? user = _auth.currentUser;
-    if (user != null) {
-      final friendQuery = await _firestore
-          .collection('users')
-          .where('username', isEqualTo: friendUsername)
-          .get();
-
-      if (friendQuery.docs.isNotEmpty) {
-        final friendDoc = friendQuery.docs.first;
-        final friendId = friendDoc.id;
-
-        // Add friend to the user's friend list
-        await _firestore.collection('users').doc(user.uid).update({
-          'friends': FieldValue.arrayUnion([friendId])
-        });
-
-        // Optionally add the user to the friend's friend list
-        await _firestore.collection('users').doc(friendId).update({
-          'friends': FieldValue.arrayUnion([user.uid])
-        });
-
-        print("Friend $friendUsername added successfully.");
-      } else {
-        print("Friend with username '$friendUsername' not found.");
-        throw Exception("Friend with username '$friendUsername' not found.");
-      }
-    }
-  }
 
   // Get all friends of the current user
   Future<List<Map<String, dynamic>>> getFriends() async {
@@ -113,15 +74,59 @@ class FirebaseService {
     return friends;
   }
 
-  // Get events for a specific friend
-  Future<List<Map<String, dynamic>>> getEventsForFriend(String friendId) async {
+  // Add user to Firestore with localId
+  Future<void> _addUserToFirestore(User? user, String localId) async {
+    if (user != null) {
+      await _firestore.collection('users').doc(user.uid).set({
+        'email': user.email,
+        'username': user.displayName ?? 'No Name',
+        'localId': localId, // Save the local ID for cross-referencing
+        'friends': [],
+        'upcomingEvents': 0,
+      });
+      print("User added to Firestore with UID: ${user.uid} and localId: $localId");
+    }
+  }
+
+  // Initialize Firestore User ID using localId
+  Future<String?> getFirestoreUserIdFromLocalId(String localId) async {
     try {
+      final snapshot = await _firestore
+          .collection('users')
+          .where('localId', isEqualTo: localId)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final firestoreUserId = snapshot.docs.first.id; // Firestore document ID
+        print("Firestore User ID found: $firestoreUserId for localId: $localId");
+        return firestoreUserId;
+      } else {
+        print("No Firestore user found for localId: $localId");
+        return null;
+      }
+    } catch (e) {
+      print("Error retrieving Firestore User ID: $e");
+      return null;
+    }
+  }
+
+  // Updated Get Events for Firebase User
+  Future<List<Map<String, dynamic>>> getEventsForFirestoreUser(String localId) async {
+    try {
+      // Fetch Firestore User ID using localId
+      String? firestoreUserId = await getFirestoreUserIdFromLocalId(localId);
+      if (firestoreUserId == null) {
+        throw Exception("No Firestore user found for localId: $localId");
+      }
+
       final eventsSnapshot = await _firestore
           .collection('users')
-          .doc(friendId)
+          .doc(firestoreUserId)
           .collection('events')
-          .orderBy('date') // Ensure events are sorted by date
+          .orderBy('date')
           .get();
+
+      print("Found ${eventsSnapshot.docs.length} events for Firestore User ID: $firestoreUserId");
 
       return eventsSnapshot.docs.map((doc) {
         return {
@@ -134,11 +139,42 @@ class FirebaseService {
         };
       }).toList();
     } catch (e) {
-      print("Error fetching friend's events: $e");
+      print("Error fetching events for Firestore user: $e");
       return [];
     }
   }
 
+
+  // Add a friend by friend's username
+  Future<void> addFriendByUsername(String friendUsername) async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      final friendQuery = await _firestore
+          .collection('users')
+          .where('username', isEqualTo: friendUsername)
+          .get();
+
+      if (friendQuery.docs.isNotEmpty) {
+        final friendDoc = friendQuery.docs.first;
+        final friendId = friendDoc.id;
+
+        // Add friend to the user's friend list
+        await _firestore.collection('users').doc(user.uid).update({
+          'friends': FieldValue.arrayUnion([friendId])
+        });
+
+        // Optionally add the user to the friend's friend list
+        await _firestore.collection('users').doc(friendId).update({
+          'friends': FieldValue.arrayUnion([user.uid])
+        });
+
+        print("Friend $friendUsername added successfully.");
+      } else {
+        print("Friend with username '$friendUsername' not found.");
+        throw Exception("Friend with username '$friendUsername' not found.");
+      }
+    }
+  }
   // Add event for the logged-in user
   Future<void> addEventForLoggedInUser(
       String name, String date, String location, String description) async {
@@ -154,7 +190,6 @@ class FirebaseService {
       throw Exception("No logged-in user found.");
     }
   }
-
   // Add event for a friend
   Future<void> addEventForFriend(
       String friendId, String name, String date, String location, String description) async {

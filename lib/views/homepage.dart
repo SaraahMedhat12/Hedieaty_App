@@ -4,8 +4,8 @@ import 'event_list.dart';
 import 'pledged_gifts.dart';
 import 'profile.dart';
 import 'gift_list.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // For shared preferences
-import '../firebase.dart'; // Make sure to import FirebaseService
+import 'package:shared_preferences/shared_preferences.dart';
+import '../firebase.dart'; // FirebaseService
 
 class HomePage extends StatefulWidget {
   @override
@@ -15,48 +15,30 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
-  // List of widgets for each page
   final List<Widget> _pages = [
-    HomePageContent(), // Home page content
-    EventListPage(), // Event page content
-    PledgedGiftsPage(), // Pledged Gifts page content
-    GiftListPage(eventName: 'Birthday Party'), // Gift list content
-    ProfilePage(userId: 0), // Set default userId to 0 here
+    HomePageContent(),
+    EventListPage(),
+    PledgedGiftsPage(),
+    GiftListPage(eventName: '',),
+    ProfilePage(userId: 0),
   ];
 
   Future<int?> _getUserIdFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt('userId');
-    print('Retrieved userId: $userId'); // Debugging statement
-    return userId;
-  }
-
-  void _navigateToProfilePage(BuildContext context) async {
-    final userId = await _getUserIdFromPrefs(); // Retrieve the userId from SharedPreferences
-
-    if (userId != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ProfilePage(userId: userId), // Pass the userId to ProfilePage
-        ),
-      );
-    } else {
-      print('User is not logged in!');
-    }
+    return prefs.getInt('userId');
   }
 
   void _updatePages() async {
     final userId = await _getUserIdFromPrefs();
     setState(() {
-      _pages[4] = ProfilePage(userId: userId ?? 0); // Dynamically pass userId to ProfilePage, defaulting to 0
+      _pages[4] = ProfilePage(userId: userId ?? 0);
     });
   }
 
   @override
   void initState() {
     super.initState();
-    _updatePages(); // Ensure ProfilePage is initialized with the userId
+    _updatePages();
   }
 
   void _onItemTapped(int index) async {
@@ -65,15 +47,10 @@ class _HomePageState extends State<HomePage> {
     });
 
     if (index == 4) {
-      // Assuming 4 is the index for the ProfilePage
       final userId = await _getUserIdFromPrefs();
-      if (userId != null) {
-        setState(() {
-          _pages[4] = ProfilePage(userId: userId);
-        });
-      } else {
-        print('User is not logged in!');
-      }
+      setState(() {
+        _pages[4] = ProfilePage(userId: userId ?? 0);
+      });
     }
   }
 
@@ -88,43 +65,26 @@ class _HomePageState extends State<HomePage> {
         actions: [
           IconButton(
             icon: Icon(Icons.search),
-            onPressed: () {
-              // Search functionality
-            },
+            onPressed: () {},
           ),
         ],
       )
-          : null, // AppBar only appears on the home page (index 0)
-      body: _pages[_selectedIndex], // Display the content of the selected page
+          : null,
+      body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        backgroundColor: Colors.brown, // Brown background
-        selectedItemColor: Colors.white, // White for selected items
-        unselectedItemColor: Colors.brown[200], // Lighter brown for unselected items
+        backgroundColor: Colors.brown,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.brown[200],
         items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.event),
-            label: 'Events',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list),
-            label: 'Pledged',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.card_giftcard),
-            label: 'Gifts',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.event), label: 'Events'),
+          BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Pledged'),
+          BottomNavigationBarItem(icon: Icon(Icons.card_giftcard), label: 'Gifts'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
-        type: BottomNavigationBarType.fixed, // Ensures all icons are visible
+        type: BottomNavigationBarType.fixed,
       ),
     );
   }
@@ -152,7 +112,6 @@ class _HomePageContentState extends State<HomePageContent> {
       setState(() {
         _friends = friendsList;
       });
-      print("Friends loaded successfully: $_friends");
     } catch (e) {
       print("Error loading friends: $e");
     }
@@ -184,7 +143,7 @@ class _HomePageContentState extends State<HomePageContent> {
                   child: ElevatedButton.icon(
                     onPressed: () => _showAddWizardDialog(context),
                     icon: Icon(Icons.create),
-                    label: Text('Add a New Event/Gift List '),
+                    label: Text('Add a New Event/Gift List'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.brown,
                       foregroundColor: Colors.white,
@@ -202,9 +161,9 @@ class _HomePageContentState extends State<HomePageContent> {
                     itemCount: _friends.length,
                     itemBuilder: (context, index) {
                       final friend = _friends[index];
-                      final name = friend['username'] ?? 'Unknown'; // Default name
-                      final profilePic = friend['profilePic'] ?? 'assets/bg2.jpeg'; // Default profile picture
-                      final upcomingEvents = friend['upcomingEvents'] ?? 0; // Default to 0 events
+                      final name = friend['username'] ?? 'Unknown';
+                      final profilePic = friend['profilePic'] ?? 'assets/bg2.jpeg';
+                      final upcomingEvents = friend['upcomingEvents'] ?? 0;
 
                       return Card(
                         elevation: 4,
@@ -237,7 +196,8 @@ class _HomePageContentState extends State<HomePageContent> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => EventListPage(friendId: friend['uid']), // Pass the user ID
+                                builder: (context) =>
+                                    EventListPage(friendId: friend['uid']),
                               ),
                             );
                           },
@@ -274,9 +234,7 @@ class _HomePageContentState extends State<HomePageContent> {
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
-              },
+              onPressed: () => Navigator.of(context).pop(),
               child: Text('Cancel'),
             ),
             ElevatedButton(
@@ -284,29 +242,12 @@ class _HomePageContentState extends State<HomePageContent> {
                 String username = nameController.text.trim();
 
                 if (username.isNotEmpty) {
-                  try {
-                    await _firebaseService.addFriendByUsername(username);
-                    if (mounted) {
-                      Navigator.of(context).pop(); // Close the dialog
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Friend $username added successfully')),
-                      );
-                      await _loadFriends(); // Reload friends list
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      Navigator.of(context).pop(); // Close the dialog
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error adding friend: $e')),
-                      );
-                    }
-                  }
-                } else {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Please enter a username')),
-                    );
-                  }
+                  await _firebaseService.addFriendByUsername(username);
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Friend added successfully!')),
+                  );
+                  _loadFriends();
                 }
               },
               child: Text('Add Friend'),
@@ -333,30 +274,24 @@ class _HomePageContentState extends State<HomePageContent> {
           actions: [
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context); // Close the dialog
+                Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => EventListPage()), // No friendId passed
+                  MaterialPageRoute(builder: (context) => EventListPage()),
                 );
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.brown,
-                foregroundColor: Colors.white,
-              ),
               child: Text('Add Event'),
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context); // Close the dialog
+                Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => GiftListPage(eventName: 'Gifts')),
+                  MaterialPageRoute(
+                    builder: (context) => GiftListPage(eventName: ''),
+                  ),
                 );
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.brown,
-                foregroundColor: Colors.white,
-              ),
               child: Text('Add Gift'),
             ),
           ],

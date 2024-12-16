@@ -62,7 +62,7 @@ class DatabaseHelper {
         category TEXT,
         price REAL,
         status TEXT,
-        event_id INTEGER NOT NULL,
+        event_id TEXT  NOT NULL,
         FOREIGN KEY (event_id) REFERENCES Events (id) ON DELETE CASCADE ON UPDATE CASCADE
       )
     ''');
@@ -219,7 +219,7 @@ class DatabaseHelper {
     }
   }
 
-  Future<int> deleteEventForUser(int userId, int eventId) async {
+  Future<int> deleteEventForUser(int userId, String eventId) async {
     final db = await database;
     try {
       return await db.delete(
@@ -244,7 +244,7 @@ class DatabaseHelper {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getAllGiftsForEvent(int eventId) async {
+  Future<List<Map<String, dynamic>>> getAllGiftsForEvent(String eventId) async {
     final db = await database;
     try {
       final result = await db.query(
