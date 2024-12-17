@@ -91,7 +91,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
         description: description,
         price: price,
         status: status,
-        isPledged: widget.existingGift?['isPledged'] ?? false,
+        isPledged: status == 'Pledged', // Synchronize isPledged with status
         eventId: _selectedEventId,
       );
 

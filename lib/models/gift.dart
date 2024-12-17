@@ -4,8 +4,9 @@ class Gift {
   final String category;
   final String description;
   final double price;
-  final String status;
+  final String status; // Available or Pledged
   final bool isPledged;
+  final String eventId;
 
   Gift({
     required this.id,
@@ -14,25 +15,25 @@ class Gift {
     required this.description,
     required this.price,
     required this.status,
-    this.isPledged = false, required String eventId,
+    required this.isPledged,
+    required this.eventId,
   });
 
-  // Convert Firestore document to Gift model
+  // Ensure isPledged matches the status field
   factory Gift.fromMap(String id, Map<String, dynamic> data) {
+    final status = data['status'] ?? 'Available';
     return Gift(
       id: id,
       name: data['name'] ?? 'Unnamed Gift',
       category: data['category'] ?? 'No Category',
       description: data['description'] ?? '',
       price: (data['price'] ?? 0).toDouble(),
-      status: data['status'] ?? 'Available',
-      isPledged: data['isPledged'] ?? false,
-      eventId: data['eventId'] ?? '', // Fetch eventId from data if available
+      status: status,
+      isPledged: status == 'Pledged', // Automatically set based on status
+      eventId: data['eventId'] ?? '',
     );
   }
 
-
-  // Convert Gift model to Map for Firestore
   Map<String, dynamic> toMap() {
     return {
       'name': name,
@@ -40,7 +41,9 @@ class Gift {
       'description': description,
       'price': price,
       'status': status,
-      'isPledged': isPledged,
+      'isPledged': status == 'Pledged', // Automatically set based on status
+      'eventId': eventId,
     };
   }
+
 }
