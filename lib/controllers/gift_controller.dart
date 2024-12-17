@@ -9,52 +9,58 @@ class GiftController {
   List<Gift> get gifts => _gifts;
 
   // Load gifts for a specific event
-  Stream<List<Gift>> LoadGiftsForEvent(String eventId) {
-    final currentUser = AuthService.getCurrentUser();
-    print("Fetching gifts for event ID: $eventId"); // Add this debug line
-
-
-    if (currentUser != null) {
-      // Query the gifts subcollection under the specific event
-      return FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUser.uid)
-          .collection('events')
-          .doc(eventId)
-          .collection('gifts')
-          .snapshots()
-          .map((snapshot) {
-        print("Gifts Snapshot: ${snapshot.docs.length} docs found"); // Add this debug line
-        return snapshot.docs.map((doc) {
-          print("Gift Data: ${doc.data()}"); // Print each gift data
-          return Gift.fromMap(doc.id, doc.data());
-        }).toList();
-      });
-    } else {
+  Stream<List<Gift>> loadGiftsForEvent(String eventId) {
+    final currentUser = AuthService.getCurrentUser(); // Get the logged-in user
+    if (currentUser == null) {
       print("Error: No user is logged in.");
-      return Stream.value([]);
+      return Stream.value([]); // Return empty stream if user is not logged in
     }
+
+    print("Fetching gifts for event ID: $eventId");
+
+    // Correct path to match the gift addition path
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid) // User ID
+        .collection('events')
+        .doc(eventId) // Event ID
+        .collection('gifts') // Gifts under the event
+        .snapshots()
+        .map((snapshot) {
+      print("Gifts Snapshot: ${snapshot.docs.length} docs found");
+      return snapshot.docs.map((doc) {
+        print("Gift Data: ${doc.data()}");
+        return Gift.fromMap(doc.id, doc.data());
+      }).toList();
+    });
   }
 
 
 
-  // Add a new gift to an event
   Future<void> addGiftToEvent(String eventId, Gift gift) async {
-    final currentUser = AuthService.getCurrentUser();
-    if (currentUser != null) {
-      await FirebaseFirestore.instance
+    final currentUser = AuthService.getCurrentUser(); // Get the logged-in user
+    if (currentUser == null) {
+      print("Error: No user is logged in.");
+      return;
+    }
+
+    try {
+      // Reference the correct Firestore path
+      final giftsRef = FirebaseFirestore.instance
           .collection('users')
-          .doc(currentUser.uid)
+          .doc(currentUser.uid) // User ID
           .collection('events')
-          .doc(eventId)
-          .collection('gifts')
-          .add(gift.toMap());
-      print("Gift added successfully under event: $eventId");
-    } else {
-      print("Error: User not authenticated.");
+          .doc(eventId) // Event ID
+          .collection('gifts'); // Gifts under the event
+
+      // Add the gift with auto-generated ID
+      final newDoc = await giftsRef.add(gift.toMap());
+
+      print("Gift added successfully under user ${currentUser.uid}, event $eventId with ID: ${newDoc.id}");
+    } catch (e) {
+      print("Error adding gift: $e");
     }
   }
-
 
   // Delete a gift
   Future<void> deleteGift(String eventId, String giftId) async {
@@ -132,51 +138,40 @@ class GiftController {
   }
 
 
-  // Function to load gifts by eventId
+  // Get gifts by event
   Future<List<Gift>> getGiftsByEvent(String eventId) async {
     try {
-      final currentUser = AuthService.getCurrentUser(); // Get the logged-in user
-      if (currentUser != null) {
-        final snapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(currentUser.uid) // Reference the logged-in user
-            .collection('events')
-            .doc(eventId) // Reference the specific event
-            .collection('gifts') // Fetch gifts under this event
-            .get();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('events')
+          .doc(eventId)
+          .collection('gifts')
+          .get();
 
-        // Map Firestore documents to Gift objects
-        _gifts = snapshot.docs.map((doc) {
-          return Gift.fromMap(doc.id, doc.data());
-        }).toList();
-
-        print('Loaded ${_gifts.length} gifts for event ID: $eventId');
-        return _gifts; // Return the fetched gifts
-      } else {
-        print('No user is logged in.');
-        return [];
-      }
+      _gifts = snapshot.docs.map((doc) => Gift.fromMap(doc.id, doc.data())).toList();
+      print('Loaded ${_gifts.length} gifts for event ID: $eventId');
+      return _gifts;
     } catch (e) {
       print('Error loading gifts: $e');
       return [];
     }
   }
 
-  // Update an existing gift in the specified event
+  // Update an existing gift
   Future<void> updateGiftInEvent(String eventId, Gift updatedGift) async {
-    final currentUser = AuthService.getCurrentUser();
-    if (currentUser != null && updatedGift.id.isNotEmpty) {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUser.uid)
-          .collection('events')
-          .doc(eventId)
-          .collection('gifts')
-          .doc(updatedGift.id) // Correct document reference
-          .update(updatedGift.toMap());
-      print("Gift updated successfully with ID: ${updatedGift.id}");
-    } else {
-      print("Error: Invalid user or gift ID.");
+    try {
+      if (updatedGift.id.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('events')
+            .doc(eventId)
+            .collection('gifts')
+            .doc(updatedGift.id)
+            .update(updatedGift.toMap());
+        print("Gift updated successfully: ${updatedGift.id}");
+      } else {
+        print("Error: Invalid gift ID.");
+      }
+    } catch (e) {
+      print("Error updating gift: $e");
     }
   }
 

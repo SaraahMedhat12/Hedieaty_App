@@ -238,7 +238,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   subtitle: StreamBuilder<List<Gift>>(
-                    stream: _giftController.LoadGiftsForEvent(eventId),
+                    stream: _giftController.loadGiftsForEvent(eventId),
                     builder: (context, giftSnapshot) {
                       if (giftSnapshot.connectionState == ConnectionState.waiting) {
                         return Text('Loading gifts...', style: TextStyle(fontSize: 14));

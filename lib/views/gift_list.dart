@@ -4,7 +4,9 @@ import '../models/gift.dart';
 import 'gift_details.dart';
 
 class GiftListPage extends StatefulWidget {
-  const GiftListPage({Key? key, required String eventName}) : super(key: key);
+  const GiftListPage({Key? key, required this.eventName}) : super(key: key);
+
+  final String eventName;
 
   @override
   _GiftListPageState createState() => _GiftListPageState();
@@ -29,7 +31,7 @@ class _GiftListPageState extends State<GiftListPage> {
       _events = events;
       if (events.isNotEmpty) {
         _selectedEventId = events.first['id'];
-        _giftsStream = _giftController.LoadGiftsForEvent(_selectedEventId!);
+        _giftsStream = _giftController.loadGiftsForEvent(_selectedEventId!);
       }
     });
   }
@@ -37,14 +39,14 @@ class _GiftListPageState extends State<GiftListPage> {
   void _onEventSelected(String? eventId) {
     setState(() {
       _selectedEventId = eventId;
-      _giftsStream = _giftController.LoadGiftsForEvent(eventId!);
+      _giftsStream = _giftController.loadGiftsForEvent(eventId!);
     });
   }
 
   void _refreshGifts() {
     if (_selectedEventId != null) {
       setState(() {
-        _giftsStream = _giftController.LoadGiftsForEvent(_selectedEventId!);
+        _giftsStream = _giftController.loadGiftsForEvent(_selectedEventId!);
       });
     }
   }
@@ -60,23 +62,20 @@ class _GiftListPageState extends State<GiftListPage> {
       ),
       body: Stack(
         children: [
-          // Background Image
           Container(
             decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assets/bg5.jpeg'), // Replace with your asset image
+                image: AssetImage('assets/bg5.jpeg'),
                 fit: BoxFit.cover,
               ),
             ),
           ),
-          // Overlay for readability
           Container(
             color: Colors.brown.withOpacity(0.2),
           ),
           Column(
             children: [
               SizedBox(height: 16),
-              // Dropdown Menu
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Container(
@@ -110,7 +109,6 @@ class _GiftListPageState extends State<GiftListPage> {
                 ),
               ),
               SizedBox(height: 12),
-              // Gift List
               Expanded(
                 child: _selectedEventId == null
                     ? Center(child: Text("No events available.", style: TextStyle(fontSize: 18)))
@@ -142,24 +140,23 @@ class _GiftListPageState extends State<GiftListPage> {
           ),
         ],
       ),
-      // Floating Add New Gift Button
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 16.0),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0), // Same padding as dropdown
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: SizedBox(
-            width: double.infinity, // Ensure it respects parent padding
+            width: double.infinity,
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.brown,
                 foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 12), // Adjust vertical padding
+                padding: EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12), // Rounded corners
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
               onPressed: () async {
-                await Navigator.push(
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => GiftDetailsPage(
@@ -168,7 +165,9 @@ class _GiftListPageState extends State<GiftListPage> {
                     ),
                   ),
                 );
-                _refreshGifts();
+                if (result == true) {
+                  _refreshGifts(); // Refresh the stream
+                }
               },
               icon: Icon(Icons.add),
               label: Text(
@@ -178,8 +177,6 @@ class _GiftListPageState extends State<GiftListPage> {
             ),
           ),
         ),
-
-
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
@@ -216,7 +213,7 @@ class _GiftListPageState extends State<GiftListPage> {
             IconButton(
               icon: Icon(Icons.edit, color: Colors.brown),
               onPressed: () async {
-                await Navigator.push(
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => GiftDetailsPage(
@@ -226,7 +223,9 @@ class _GiftListPageState extends State<GiftListPage> {
                     ),
                   ),
                 );
-                _refreshGifts();
+                if (result == true) {
+                  _refreshGifts();
+                }
               },
             ),
             IconButton(
