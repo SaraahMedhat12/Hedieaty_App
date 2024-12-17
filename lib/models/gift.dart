@@ -26,9 +26,11 @@ class Gift {
       description: data['description'] ?? '',
       price: (data['price'] ?? 0).toDouble(),
       status: data['status'] ?? 'Available',
-      isPledged: data['isPledged'] ?? false, eventId: '',
+      isPledged: data['isPledged'] ?? false,
+      eventId: data['eventId'] ?? '', // Fetch eventId from data if available
     );
   }
+
 
   // Convert Gift model to Map for Firestore
   Map<String, dynamic> toMap() {

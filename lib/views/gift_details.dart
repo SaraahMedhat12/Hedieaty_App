@@ -80,25 +80,28 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
 
       final String status = _selectedStatus.isNotEmpty ? _selectedStatus : "Available";
 
-      final String giftId = widget.existingGift != null
-          ? widget.existingGift!.id
-          : FirebaseFirestore.instance.collection('gifts').doc().id;
+      // Ensure Gift ID exists or generate a new one
+      final String giftId = widget.existingGift?['id'] ??
+          FirebaseFirestore.instance.collection('gifts').doc().id;
 
       final newGift = Gift(
-        id: giftId,
+        id: giftId, // Use the correct ID
         name: name,
         category: category,
         description: description,
         price: price,
         status: status,
-        isPledged: widget.existingGift?.isPledged ?? false, eventId: '',
+        isPledged: widget.existingGift?['isPledged'] ?? false,
+        eventId: _selectedEventId,
       );
 
       try {
         if (widget.existingGift != null) {
+          // Update existing gift
           await _giftController.updateGiftInEvent(_selectedEventId, newGift);
-          print("Gift updated successfully!");
+          print("Gift updated successfully: ${newGift.id}");
         } else {
+          // Add a new gift
           await _giftController.addGiftToEvent(_selectedEventId, newGift);
           print("Gift added successfully!");
         }
@@ -116,9 +119,6 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
       );
     }
   }
-
-
-
 
 
   @override

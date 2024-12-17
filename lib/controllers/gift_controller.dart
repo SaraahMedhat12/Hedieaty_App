@@ -161,21 +161,21 @@ class GiftController {
     try {
       if (updatedGift.id.isNotEmpty) {
         await FirebaseFirestore.instance
+            .collection('users')
+            .doc(AuthService.getCurrentUser()?.uid)
             .collection('events')
             .doc(eventId)
             .collection('gifts')
-            .doc(updatedGift.id)
+            .doc(updatedGift.id) // Correctly update the gift by its ID
             .update(updatedGift.toMap());
         print("Gift updated successfully: ${updatedGift.id}");
       } else {
-        print("Error: Invalid gift ID.");
+        print("Error: Gift ID is empty.");
       }
     } catch (e) {
       print("Error updating gift: $e");
     }
   }
-
-
 
   Future<List<Map<String, dynamic>>> loadEventsFromFirebase(String userId) async {
     try {
