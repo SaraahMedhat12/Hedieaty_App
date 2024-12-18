@@ -6,6 +6,7 @@ import '../models/gift.dart';
 class GiftController {
   List<Gift> _gifts = [];
   final FirebaseService _firebaseService = FirebaseService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<Gift> get gifts => _gifts;
 
   // Load gifts for a specific event
@@ -192,6 +193,99 @@ class GiftController {
     }
   }
 
+  Stream<List<Gift>> loadGiftsForFriend(String friendId) {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(friendId)
+        .collection('events')
+        .snapshots()
+        .asyncMap((eventSnapshot) async {
+      // Map each event to its gifts
+      List<Gift> allGifts = [];
+      for (var eventDoc in eventSnapshot.docs) {
+        final giftsSnapshot = await eventDoc.reference.collection('gifts').get();
+        final gifts = giftsSnapshot.docs
+            .map((doc) => Gift.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+            .toList();
+        allGifts.addAll(gifts);
+      }
+      return allGifts; // Flattened list of all gifts
+    });
+  }
+
+
+  // Future<void> pledgeGift(String friendId, String eventId, String giftId) async {
+  //   try {
+  //     final giftRef = FirebaseFirestore.instance
+  //         .collection('users')
+  //         .doc(friendId)
+  //         .collection('events')
+  //         .doc(eventId)
+  //         .collection('gifts')
+  //         .doc(giftId);
+  //
+  //     await giftRef.update({
+  //       'status': 'Pledged',
+  //       'isPledged': true,
+  //     });
+  //
+  //     print("Gift successfully pledged!");
+  //   } catch (e) {
+  //     print("Error pledging gift: $e");
+  //   }
+  // }
+
+  Stream<List<Gift>> loadGiftsForEventForUser(String userId, String eventId) {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('events')
+        .doc(eventId)
+        .collection('gifts')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => Gift.fromMap(doc.id, doc.data())).toList();
+    });
+  }
+
+  /// Pledge a gift: Update gift status and copy to current user's pledged list
+  Future<void> pledgeGift( {
+    required String friendId,
+    required String eventId,
+    required String giftId,
+    required String currentUserId,
+    required Map<String, dynamic> giftInfo,
+  }) async {
+    final firestore = FirebaseFirestore.instance;
+
+    try {
+      // Update gift status in the friend's collection
+      await firestore
+          .collection('users')
+          .doc(friendId)
+          .collection('events')
+          .doc(eventId)
+          .collection('gifts')
+          .doc(giftId)
+          .update({
+        'status': 'Pledged',
+        'isPledged': true,
+      });
+
+      // Add the pledged gift to the current user's collection
+      await firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('pledged_gifts')
+          .doc(giftId)
+          .set(giftInfo);
+
+      print("Gift pledged and saved successfully.");
+    } catch (e) {
+      print("Error in pledgeGift: $e");
+      rethrow;
+    }
+  }
 
 
 }

@@ -195,4 +195,27 @@ class EventController {
     if (eventDate.isAfter(now)) return 'Upcoming';
     return 'Current';
   }
+
+  // Function to load events for a specific user (friendId)
+  Future<List<Map<String, dynamic>>> loadEventsFromFirebase_friend(String friendId) async {
+    List<Map<String, dynamic>> events = [];
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(friendId)
+          .collection('events')
+          .get();
+
+      for (var doc in querySnapshot.docs) {
+        events.add({
+          'id': doc.id,
+          ...doc.data() as Map<String, dynamic>,
+        });
+      }
+      return events; // Return the list of events
+    } catch (e) {
+      print("Error fetching events: $e");
+      return []; // Return empty list on error
+    }
+  }
 }

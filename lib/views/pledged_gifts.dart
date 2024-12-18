@@ -1,47 +1,76 @@
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../controllers/pledged_gift_controller.dart';
 
-void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: PledgedGiftsPage(),
-  ));
+class PledgedGift {
+  final String giftName;
+  final String friendName;
+  final DateTime dueDate;
+
+  PledgedGift({
+    required this.giftName,
+    required this.friendName,
+    required this.dueDate,
+  });
 }
 
-
 class PledgedGiftsPage extends StatelessWidget {
-  // Example list of pledged gifts
-  final List<PledgedGift> pledgedGifts = [
-    PledgedGift(giftName: 'SunGlasses', friendName: 'Malak', dueDate: DateTime(2024, 12, 25)),
-    PledgedGift(giftName: 'Watch', friendName: 'Omar', dueDate: DateTime(2024, 11, 15)),
-    PledgedGift(giftName: 'Jewelry', friendName: 'Mariam', dueDate: DateTime(2024, 10, 30)),
-  ];
+  PledgedGiftsPage({Key? key}) : super(key: key);
+
+  final Stream<QuerySnapshot> _pledgedGiftsStream = FirebaseFirestore.instance
+      .collection('users')
+      .doc("currentUserIdHere") // Replace with the actual logged-in user ID
+      .collection('pledged_gifts')
+      .snapshots();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("My Pledged Gifts"),
+        title: const Text("My Pledged Gifts", style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.brown,
-        foregroundColor: Colors.white,
       ),
       body: Stack(
         children: [
-          // Background Image
           Positioned.fill(
             child: Image.asset(
               'assets/bg5.jpeg',
               fit: BoxFit.cover,
             ),
           ),
-          // List of Pledged Gifts
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: ListView.builder(
-              itemCount: pledgedGifts.length,
-              itemBuilder: (context, index) {
-                return _buildGiftCard(context, pledgedGifts[index]);
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _pledgedGiftsStream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      "No pledged gifts found.",
+                      style: TextStyle(fontSize: 16, color: Colors.brown),
+                    ),
+                  );
+                }
+
+                final pledgedGifts = snapshot.data!.docs;
+
+                return ListView.builder(
+                  itemCount: pledgedGifts.length,
+                  itemBuilder: (context, index) {
+                    final gift = pledgedGifts[index];
+                    return _buildGiftCard(
+                      context,
+                      PledgedGift(
+                        giftName: gift['giftName'],
+                        friendName: gift['friendName'],
+                        dueDate: (gift['dueDate'] as Timestamp).toDate(),
+                      ),
+                    );
+                  },
+                );
               },
             ),
           ),
@@ -50,15 +79,14 @@ class PledgedGiftsPage extends StatelessWidget {
     );
   }
 
-  // Build the gift card with border and shadow
   Widget _buildGiftCard(BuildContext context, PledgedGift gift) {
     return Card(
-      margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+      margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: Colors.brown, width: 1),
+        side: const BorderSide(color: Colors.brown, width: 1),
         borderRadius: BorderRadius.circular(8),
       ),
-      elevation: 5, // Shadow effect
+      elevation: 5,
       child: ListTile(
         title: Text(gift.giftName),
         subtitle: Column(
@@ -68,32 +96,29 @@ class PledgedGiftsPage extends StatelessWidget {
             Text('Due Date: ${gift.dueDate.toLocal()}'.split(' ')[0]),
           ],
         ),
-        trailing: _buildModifyButton(context, gift),
+        trailing: PopupMenuButton<String>(
+          onSelected: (value) {
+            if (value == 'Modify') {
+              _showModifyDialog(context, gift);
+            } else if (value == 'Remove') {
+              print('Removing gift: ${gift.giftName}');
+            }
+          },
+          itemBuilder: (context) {
+            return ['Modify', 'Remove']
+                .map((choice) => PopupMenuItem<String>(
+              value: choice,
+              child: Text(choice),
+            ))
+                .toList();
+          },
+        ),
       ),
     );
   }
 
-  // Button to modify the pledge
-  Widget _buildModifyButton(BuildContext context, PledgedGift gift) {
-    return PopupMenuButton<String>(
-      onSelected: (value) {
-        if (value == 'Modify') {
-          showModifyDialog(context, gift); // Call the function from the new file
-        } else if (value == 'Remove') {
-          // Handle removal of the gift from the pledged gifts
-          print('Removing gift: ${gift.giftName}');
-        }
-      },
-      itemBuilder: (BuildContext context) {
-        return {'Modify', 'Remove'}.map((String choice) {
-          return PopupMenuItem<String>(
-            value: choice,
-            child: Text(choice),
-          );
-        }).toList();
-      },
-    );
+  void _showModifyDialog(BuildContext context, PledgedGift gift) {
+    // Add your modify logic here
+    print('Modify gift: ${gift.giftName}');
   }
 }
-
-

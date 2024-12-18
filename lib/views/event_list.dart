@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import '../controllers/event_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'friend_gift_list.dart';
+
 
 class EventListPage extends StatefulWidget {
   final String? friendId; // Optional friend ID
 
-  EventListPage({this.friendId}); // Default is null for logged-in user
+  EventListPage({this.friendId});
+
+  get friendName => null; // Default is null for logged-in user
 
   @override
   _EventListPageState createState() => _EventListPageState();
@@ -14,7 +18,11 @@ class EventListPage extends StatefulWidget {
 class _EventListPageState extends State<EventListPage> {
   final EventController eventController = EventController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final bool useFirebase = true; // Toggle Firebase usage
+  final bool useFirebase = true;
+  List<Map<String, dynamic>> _events = [];
+
+  get event => null;
+
 
   @override
   void initState() {
@@ -46,8 +54,8 @@ class _EventListPageState extends State<EventListPage> {
       appBar: AppBar(
         title: Text(
           widget.friendId == null
-              ? 'My Events' // For the logged-in user
-              : 'Friend\'s Events', // For the friend's list
+              ? 'My Event List' // For the logged-in user
+              : 'Friend\'s Event List', // For the friend's list
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.brown,
@@ -60,17 +68,20 @@ class _EventListPageState extends State<EventListPage> {
       ),
       body: Stack(
         children: [
+          // Background Image
           Positioned.fill(
             child: Image.asset(
               'assets/bg5.jpeg',
               fit: BoxFit.cover,
             ),
           ),
+          // Main Content
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Column(
               children: [
-                if (widget.friendId == null) // Show "Add New Event" only for logged-in user
+                // Add New Event Button (For logged-in user only)
+                if (widget.friendId == null)
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -87,6 +98,47 @@ class _EventListPageState extends State<EventListPage> {
                       ),
                     ),
                   ),
+
+                // View Friend's Gift List Button
+                if (widget.friendId != null)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // Ensure valid friendId
+                        if (widget.friendId != null && widget.friendId!.isNotEmpty) {
+                          print("Navigating to FriendGiftListPage...");
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => FriendGiftListPage(
+                                friendId: widget.friendId!,
+                                friendName: widget.friendName ?? 'Unnamed Friend',
+                                eventId: null, // Event ID will be selected later in dropdown
+                              ),
+                            ),
+                          );
+                        } else {
+                          print("Error: Friend ID is null or empty.");
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("Invalid friend. Cannot navigate.")),
+                          );
+                        }
+                      },
+                      icon: Icon(Icons.card_giftcard),
+                      label: Text('View Friend\'s Gift List'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.brown,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Event List
                 Expanded(
                   child: eventController.events.isEmpty
                       ? Center(
@@ -110,14 +162,14 @@ class _EventListPageState extends State<EventListPage> {
                         elevation: 5,
                         child: ListTile(
                           title: Text(
-                            event['name'],
+                            event['name'] ?? 'Unnamed Event',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.brown[800],
                             ),
                           ),
                           subtitle: Text(
-                            'Category: ${event['category']} | Status: ${event['status']}',
+                            'Category: ${event['category'] ?? 'N/A'} | Status: ${event['status'] ?? 'N/A'}',
                             style: TextStyle(color: Colors.brown[600]),
                           ),
                           trailing: widget.friendId == null
@@ -158,6 +210,9 @@ class _EventListPageState extends State<EventListPage> {
       ),
     );
   }
+
+
+
 
   void _showAddEventDialog() {
     TextEditingController nameController = TextEditingController();
@@ -452,3 +507,5 @@ void _showEditEventDialog(int index) {
     );
   }
 }
+
+
