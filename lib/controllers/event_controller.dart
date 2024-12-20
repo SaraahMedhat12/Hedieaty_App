@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../database.dart';
+import '../service/database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../firebase.dart'; // Import FirebaseService
+import '../service/firebase.dart'; // Import FirebaseService
 
 class EventController {
   List<Map<String, dynamic>> events = []; // Events for the logged-in user

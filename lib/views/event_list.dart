@@ -342,7 +342,7 @@ class _EventListPageState extends State<EventListPage> {
   }
 
 
-void _showEditEventDialog(int index) {
+  void _showEditEventDialog(int index) {
     final event = eventController.events[index];
     TextEditingController nameController = TextEditingController(text: event['name']);
     TextEditingController locationController = TextEditingController(text: event['location']);
@@ -507,5 +507,4 @@ void _showEditEventDialog(int index) {
     );
   }
 }
-
 

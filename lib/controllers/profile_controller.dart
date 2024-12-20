@@ -1,10 +1,10 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../auth_service.dart';
+import '../service/auth_service.dart';
 import '../controllers/gift_controller.dart'; // Import GiftController
-import '../database.dart'; // Local database remains
-import '../firebase.dart'; // FirebaseService import for events
+import '../service/database.dart'; // Local database remains
+import '../service/firebase.dart'; // FirebaseService import for events
 import '../models/gift.dart'; // Import the Gift model here
 
 class ProfileController {
@@ -169,5 +169,11 @@ class ProfileController {
   Future<int?> _getUserIdFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('userId');
+  }
+
+  void toggleNotifications(bool value) {
+    notificationsEnabled = value;
+    // Optionally save the value to Firebase or local storage
+    print("Notifications Enabled: $notificationsEnabled");
   }
 }

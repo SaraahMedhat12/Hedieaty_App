@@ -297,4 +297,94 @@ class FirebaseService {
     if (eventDate.isAfter(now)) return 'Upcoming';
     return 'Current';
   }
+
+  // Check if a friend exists by username
+  Future<bool> isFriendExists(String friendUsername) async {
+    final friendQuery = await _firestore
+        .collection('users')
+        .where('username', isEqualTo: friendUsername)
+        .get();
+
+    // Check if any documents exist for the provided username
+    if (friendQuery.docs.isNotEmpty) {
+      print("Friend with username '$friendUsername' exists.");
+      return true;
+    } else {
+      print("Friend with username '$friendUsername' not found.");
+      return false;
+    }
+  }
+
+  Future<void> addOrUpdateGift(
+      String userId, String eventId, String giftId, Map<String, dynamic> giftData) async {
+    try {
+      final giftDocRef = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('events')
+          .doc(eventId)
+          .collection('gifts')
+          .doc(giftId);
+
+      // Check if the gift already exists
+      final giftSnapshot = await giftDocRef.get();
+      if (giftSnapshot.exists) {
+        // Update the existing gift
+        await giftDocRef.update(giftData);
+        print("Gift updated successfully for user: $userId, event: $eventId, gift: $giftId");
+      } else {
+        // Add the gift if it doesn't exist
+        await giftDocRef.set(giftData);
+        print("Gift added successfully for user: $userId, event: $eventId, gift: $giftId");
+      }
+    } catch (e) {
+      print("Error adding or updating gift: $e");
+      throw Exception("Failed to add or update gift in Firebase.");
+    }
+  }
+  Future<void> editGift({
+    required String eventId,
+    required String giftId,
+    required Map<String, dynamic> updatedGiftData,
+  }) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+
+      // Validate the authenticated user
+      if (currentUser == null) {
+        throw Exception("No authenticated user found.");
+      }
+
+      final firestore = FirebaseFirestore.instance;
+
+      // Firestore reference to the gift document
+      final giftDocRef = firestore
+          .collection('users')
+          .doc(currentUser.uid) // User ID
+          .collection('events')
+          .doc(eventId) // Event ID
+          .collection('gifts')
+          .doc(giftId); // Gift ID
+
+      // Debugging: Log the Firestore path and the update data
+      print("Editing Gift at Path: users/${currentUser.uid}/events/$eventId/gifts/$giftId");
+      print("Updated Gift Data: $updatedGiftData");
+
+      // Check if the document exists
+      final giftSnapshot = await giftDocRef.get();
+      if (!giftSnapshot.exists) {
+        throw Exception("Gift document not found at path: users/${currentUser.uid}/events/$eventId/gifts/$giftId");
+      }
+
+      // Update the gift document
+      await giftDocRef.update(updatedGiftData);
+      print("Gift updated successfully: $giftId");
+    } catch (e) {
+      // Log and rethrow the error for higher-level handling
+      print("Error editing gift: $e");
+      rethrow;
+    }
+  }
+
+
 }

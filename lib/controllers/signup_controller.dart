@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../database.dart';
+import '../service/database.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import '../auth_service.dart';
+import '../service/auth_service.dart';
 
 class SignupControllers {
   final nameController = TextEditingController();

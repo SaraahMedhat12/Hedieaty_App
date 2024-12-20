@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../auth_service.dart';
+import '../service/auth_service.dart';
 import '../controllers/gift_controller.dart';
 import '../controllers/profile_controller.dart';
 import '../models/gift.dart';
@@ -77,7 +77,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   _buildProfileDetail('Phone Number', _controller.phoneNumber, Icons.phone),
-                  _buildProfileDetail('Birthday', '${_controller.birthday.toLocal()}'.split(' ')[0], Icons.cake),
+                  _buildProfileDetail(
+                    'Birthday',
+                    '${_controller.birthday.toLocal()}'.split(' ')[0],
+                    Icons.cake,
+                  ),
                   SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
@@ -96,8 +100,30 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   SizedBox(height: 20),
-                  Divider(thickness: 10, color: Colors.brown),
-                  SizedBox(height: 50),
+                  // Notification Settings Section
+                  Divider(thickness: 10, color: Colors.brown[200]),
+                  SizedBox(height: 20),
+                  Text(
+                    'Notification Settings',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: Colors.brown[900],
+                    ),
+                  ),
+                  SwitchListTile(
+                    title: Text('Receive Notifications'),
+                    value: _controller.notificationsEnabled,
+                    activeColor: Colors.brown,
+                    onChanged: (bool value) {
+                      setState(() {
+                        _controller.toggleNotifications(value);
+                      });
+                    },
+                  ),
+                  SizedBox(height: 20),
+                  Divider(thickness: 10, color: Colors.brown[200]),
+                  SizedBox(height: 20),
                   Text(
                     'Your Created Events',
                     style: TextStyle(
@@ -108,7 +134,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   _buildEventsList(),
                   SizedBox(height: 20),
-                  Divider(thickness: 10, color: Colors.brown),
+                  Divider(thickness: 10, color: Colors.brown[200]),
                   SizedBox(height: 50),
                   SizedBox(
                     width: double.infinity,
@@ -131,7 +157,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   SizedBox(height: 20),
-                  Divider(thickness: 10, color: Colors.brown),
+                  Divider(thickness: 10, color: Colors.brown[200]),
                   SizedBox(height: 50),
                   SizedBox(
                     width: double.infinity,
@@ -161,6 +187,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+
 
   Widget _buildProfileDetail(String label, String value, IconData icon) {
     return Padding(

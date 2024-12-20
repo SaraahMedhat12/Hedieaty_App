@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../auth_service.dart';
-import '../firebase.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../service/auth_service.dart';
+import '../service/firebase.dart';
 import '../models/gift.dart';
 
 class GiftController {
@@ -39,29 +40,43 @@ class GiftController {
 
 
   Future<void> addGiftToEvent(String eventId, Gift gift) async {
-    final currentUser = AuthService.getCurrentUser(); // Get the logged-in user
+    final currentUser = AuthService.getCurrentUser();
     if (currentUser == null) {
       print("Error: No user is logged in.");
       return;
     }
 
     try {
-      // Reference the correct Firestore path
+      // Check for duplicate names
+      final existingGiftsSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection('events')
+          .doc(eventId)
+          .collection('gifts')
+          .where('name', isEqualTo: gift.name)
+          .get();
+
+      if (existingGiftsSnapshot.docs.isNotEmpty) {
+        throw Exception("A gift with this name already exists in the list.");
+      }
+
+      // Add the gift if no duplicates
       final giftsRef = FirebaseFirestore.instance
           .collection('users')
-          .doc(currentUser.uid) // User ID
+          .doc(currentUser.uid)
           .collection('events')
-          .doc(eventId) // Event ID
-          .collection('gifts'); // Gifts under the event
+          .doc(eventId)
+          .collection('gifts');
 
-      // Add the gift with auto-generated ID
       final newDoc = await giftsRef.add(gift.toMap());
-
       print("Gift added successfully under user ${currentUser.uid}, event $eventId with ID: ${newDoc.id}");
     } catch (e) {
       print("Error adding gift: $e");
+      throw e;
     }
   }
+
 
   // Delete a gift
   Future<void> deleteGift(String eventId, String giftId) async {
@@ -162,21 +177,22 @@ class GiftController {
     try {
       if (updatedGift.id.isNotEmpty) {
         await FirebaseFirestore.instance
-            .collection('users')
-            .doc(AuthService.getCurrentUser()?.uid)
             .collection('events')
             .doc(eventId)
             .collection('gifts')
-            .doc(updatedGift.id) // Correctly update the gift by its ID
+            .doc(updatedGift.id)
             .update(updatedGift.toMap());
         print("Gift updated successfully: ${updatedGift.id}");
       } else {
-        print("Error: Gift ID is empty.");
+        print("Error: Invalid gift ID.");
       }
     } catch (e) {
       print("Error updating gift: $e");
     }
   }
+
+
+
 
   Future<List<Map<String, dynamic>>> loadEventsFromFirebase(String userId) async {
     try {
@@ -284,6 +300,52 @@ class GiftController {
     } catch (e) {
       print("Error in pledgeGift: $e");
       rethrow;
+    }
+  }
+
+  Future<void> updateGift(String userId, String eventId, String giftId, Map<String, dynamic> giftData) async {
+    try {
+      // Validate the userId
+      if (userId.isEmpty || !userId.startsWith('H')) { // Assuming userId starts with an H
+        throw Exception("Invalid userId: $userId");
+      }
+
+      // Validate eventId and giftId
+      if (eventId.isEmpty || giftId.isEmpty) {
+        throw Exception("Invalid eventId or giftId: eventId=$eventId, giftId=$giftId");
+      }
+
+      // Validate giftData (required fields only as per Firestore schema)
+      if (!giftData.containsKey('name') || !giftData.containsKey('category') || !giftData.containsKey('price')) {
+        throw Exception("Gift data is missing required fields: $giftData");
+      }
+
+      // Correct Firestore path
+      final docRef = FirebaseFirestore.instance
+          .collection('users') // Top-level users collection
+          .doc(userId)         // User's ID
+          .collection('events') // Events collection for the user
+          .doc(eventId)         // Specific event ID
+          .collection('gifts')  // Gifts collection within the event
+          .doc(giftId);         // Specific gift ID
+
+      // Debugging: Log the Firestore path and gift data
+      print("Firestore Path: users/$userId/events/$eventId/gifts/$giftId");
+      print("Gift Data to Update: $giftData");
+
+      // Check if the document exists
+      final docSnapshot = await docRef.get();
+      if (docSnapshot.exists) {
+        // Proceed with the update
+        await docRef.update(giftData);
+        print("Gift updated successfully!");
+      } else {
+        throw Exception("Document not found at path: users/$userId/events/$eventId/gifts/$giftId");
+      }
+    } catch (e) {
+      // Print and rethrow the error for debugging
+      print("Error updating gift: $e");
+      throw e;
     }
   }
 

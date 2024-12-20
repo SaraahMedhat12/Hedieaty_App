@@ -19,7 +19,11 @@ dependencies:
   firebase_storage: ^12.3.6
   crypto: ^3.0.0
   shared_preferences: ^2.0.15
+  file_picker: ^5.0.0
+#  firebase_messaging: ^15.1.5
+  flutter_local_notifications: ^18.0.1
   #bcrypt: ^3.0.0  # for hashing passwords
+
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -29,6 +33,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+#  integration_test: ^1.0.4
 
 flutter:
   uses-material-design: true

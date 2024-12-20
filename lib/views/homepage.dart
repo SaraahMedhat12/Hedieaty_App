@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../database.dart';
+import '../service/database.dart';
 import 'event_list.dart';
 import 'pledged_gifts.dart';
 import 'profile.dart';
 import 'gift_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../firebase.dart'; // FirebaseService
+import '../service/firebase.dart'; // FirebaseService
 
 class HomePage extends StatefulWidget {
   @override
@@ -19,7 +19,7 @@ class _HomePageState extends State<HomePage> {
     HomePageContent(),
     EventListPage(),
     PledgedGiftsPage(),
-    GiftListPage(eventName: '',),
+    GiftListPage(eventName: ''),
     ProfilePage(userId: 0),
   ];
 
@@ -65,7 +65,7 @@ class _HomePageState extends State<HomePage> {
         actions: [
           IconButton(
             icon: Icon(Icons.search),
-            onPressed: () {},
+            onPressed: () => _showSearchDialog(context),
           ),
         ],
       )
@@ -85,6 +85,55 @@ class _HomePageState extends State<HomePage> {
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         type: BottomNavigationBarType.fixed,
+      ),
+    );
+  }
+
+  void _showSearchDialog(BuildContext context) {
+    TextEditingController searchController = TextEditingController();
+    FirebaseService firebaseService = FirebaseService();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Search for a Friend',
+          style: TextStyle(color: Colors.brown),
+        ),
+        content: TextField(
+          controller: searchController,
+          decoration: InputDecoration(
+            hintText: 'Enter username',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: Colors.brown)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              String username = searchController.text.trim();
+              if (username.isNotEmpty) {
+                bool friendExists = await firebaseService.isFriendExists(username);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(friendExists
+                        ? 'User "$username" exists!'
+                        : 'User "$username" not found.'),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.brown,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Search'),
+          ),
+        ],
       ),
     );
   }
@@ -221,10 +270,7 @@ class _HomePageContentState extends State<HomePageContent> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(
-            'Add Friend',
-            style: TextStyle(color: Colors.brown, fontWeight: FontWeight.bold),
-          ),
+          title: Text('Add Friend', style: TextStyle(color: Colors.brown)),
           content: TextField(
             controller: nameController,
             decoration: InputDecoration(
@@ -235,21 +281,21 @@ class _HomePageContentState extends State<HomePageContent> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel'),
+              child: Text('Cancel', style: TextStyle(color: Colors.brown)),
             ),
             ElevatedButton(
               onPressed: () async {
                 String username = nameController.text.trim();
-
                 if (username.isNotEmpty) {
                   await _firebaseService.addFriendByUsername(username);
                   Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Friend added successfully!')),
-                  );
                   _loadFriends();
                 }
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.brown,
+                foregroundColor: Colors.white,
+              ),
               child: Text('Add Friend'),
             ),
           ],
@@ -263,36 +309,26 @@ class _HomePageContentState extends State<HomePageContent> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(
-            'Choose Action',
-            style: TextStyle(color: Colors.brown, fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            'Would you like to add an Event to your list or add a Gift?',
-            style: TextStyle(fontSize: 16, color: Colors.black),
-          ),
+          title: Text('Choose Action', style: TextStyle(color: Colors.brown)),
+          content: Text('Would you like to add an Event or a Gift?'),
           actions: [
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => EventListPage()),
-                );
-              },
-              child: Text('Add Event'),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => EventListPage()),
+              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.brown),
+              child: Text('Add Event', style: TextStyle(color: Colors.white)),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => GiftListPage(eventName: ''),
-                  ),
-                );
-              },
-              child: Text('Add Gift'),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GiftListPage(eventName: ''),
+                ),
+              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.brown),
+              child: Text('Add Gift', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
